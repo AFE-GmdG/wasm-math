@@ -36,18 +36,33 @@ export class Vector3 implements Disposable {
   constructor(tmp: boolean);
   constructor(vecOrTmp?: [number, number, number] | boolean) {
     if (typeof vecOrTmp === "boolean") {
-      if (firstFreeTemporaryOffset < firstFreePermanentOffset) {
-        throw new Error("Vector3: out of memory!");
-      }
       this.#isTemporary = vecOrTmp;
-      this.#index = firstFreeTemporaryOffset;
-      this.#offset = this.#index << 4;
-      this.#view = new Float32Array(memory.buffer, this.#offset, 3);
-      this.#view.fill(0);
-      privateOffsetArray[this.#index] = this;
-      firstFreeTemporaryOffset--;
-      while (privateOffsetArray[firstFreeTemporaryOffset] !== null && firstFreeTemporaryOffset >= firstFreePermanentOffset) {
+      if (this.#isTemporary) {
+        if (firstFreeTemporaryOffset < firstFreePermanentOffset) {
+          throw new Error("Vector3: out of memory!");
+        }
+        this.#index = firstFreeTemporaryOffset;
+        this.#offset = this.#index << 4;
+        this.#view = new Float32Array(memory.buffer, this.#offset, 3);
+        this.#view.fill(0);
+        privateOffsetArray[this.#index] = this;
         firstFreeTemporaryOffset--;
+        while (privateOffsetArray[firstFreeTemporaryOffset] !== null && firstFreeTemporaryOffset >= firstFreePermanentOffset) {
+          firstFreeTemporaryOffset--;
+        }
+      } else {
+        if (firstFreePermanentOffset > firstFreeTemporaryOffset) {
+          throw new Error("Vector3: out of memory!");
+        }
+        this.#index = firstFreePermanentOffset;
+        this.#offset = this.#index << 4;
+        this.#view = new Float32Array(memory.buffer, this.#offset, 3);
+        this.#view.fill(0);
+        privateOffsetArray[this.#index] = this;
+        firstFreePermanentOffset++;
+        while (privateOffsetArray[firstFreePermanentOffset] !== null && firstFreePermanentOffset <= firstFreeTemporaryOffset) {
+          firstFreePermanentOffset++;
+        }
       }
     } else {
       if (firstFreePermanentOffset > firstFreeTemporaryOffset) {

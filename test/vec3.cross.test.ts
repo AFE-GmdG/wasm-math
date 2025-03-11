@@ -1,7 +1,7 @@
 import { test, expect } from "vitest";
-import { Vector3, VecX3Params } from "./math.js";
+import { Vector3, VecX3 } from "./math";
 
-test.each<VecX3Params>([
+test.each<VecX3>([
   { v1: [1, 2, 3], v2: [4, 5, 6], result: [-3, 6, -3] },
   { v1: [0.2, -1.1, -0.9], v2: [2.1, 2.2, 1.8], result: [0.0, -2.25, 2.75] },
   { v1: [0, 0, 0], v2: [0, 0, 0], result: [0, 0, 0] },
@@ -18,7 +18,7 @@ test.each<VecX3Params>([
   expect(rz).closeTo(result[2], 0.0001);
 });
 
-test.each<VecX3Params>([
+test.each<VecX3>([
   { v1: [1, 2, 3], v2: [4, 5, 6], result: [-3, 6, -3] },
   { v1: [0.2, -1.1, -0.9], v2: [2.1, 2.2, 1.8], result: [0.0, -2.25, 2.75] },
   { v1: [0, 0, 0], v2: [0, 0, 0], result: [0, 0, 0] },

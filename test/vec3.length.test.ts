@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { Vector3, VecX1RNumber } from "./math.js";
+import { Vector3, VecX1RNumber } from "./math";
 
 test.each<VecX1RNumber>([
   { v: [1, 2, 3], result: 3.7417 },

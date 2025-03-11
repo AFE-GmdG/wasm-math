@@ -2,6 +2,10 @@ export { Vector3 } from "../dist/wasm-math.js";
 
 export type Vector = [number, number, number];
 
+export type VecX1 = {
+  v: Vector;
+};
+
 export type VecX1RNumber = {
   v: Vector;
   result: number;
