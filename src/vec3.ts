@@ -146,6 +146,21 @@ export class Vector3 implements Disposable {
   }
 
   /**
+   * Adds two vectors. (TypeScript version)
+   * @param a The first vector.
+   * @param b The second vector.
+   * @param result The result vector.
+   */
+  static add_ts(a: [number, number, number], b: [number, number, number], result: [number, number, number] = [0, 0, 0]): [number, number, number] {
+    const [ax, ay, az] = a;
+    const [bx, by, bz] = b;
+    result[0] = ax + bx;
+    result[1] = ay + by;
+    result[2] = az + bz;
+    return result;
+  }
+
+  /**
    * Subtracts two vectors.
    * @param a The first vector.
    * @param b The second vector.
@@ -153,6 +168,21 @@ export class Vector3 implements Disposable {
    */
   static sub(a: Vector3, b: Vector3, result: Vector3): Vector3 {
     vSub(a.#offset, b.#offset, result.#offset);
+    return result;
+  }
+
+  /**
+   * Subtracts two vectors. (TypeScript version)
+   * @param a The first vector.
+   * @param b The second vector.
+   * @param result The result vector.
+   */
+  static sub_ts(a: [number, number, number], b: [number, number, number], result: [number, number, number] = [0, 0, 0]): [number, number, number] {
+    const [ax, ay, az] = a;
+    const [bx, by, bz] = b;
+    result[0] = ax - bx;
+    result[1] = ay - by;
+    result[2] = az - bz;
     return result;
   }
 
@@ -168,12 +198,38 @@ export class Vector3 implements Disposable {
   }
 
   /**
+   * Calculates the cross product of two vectors. (TypeScript version)
+   * @param a The first vector.
+   * @param b The second vector.
+   * @param result The result vector.
+   */
+  static cross_ts(a: [number, number, number], b: [number, number, number], result: [number, number, number] = [0, 0, 0]): [number, number, number] {
+    const [ax, ay, az] = a;
+    const [bx, by, bz] = b;
+    result[0] = ay * bz - az * by;
+    result[1] = az * bx - ax * bz;
+    result[2] = ax * by - ay * bx;
+    return result;
+  }
+
+  /**
    * Calculates the dot product of two vectors.
    * @param a The first vector.
    * @param b The second vector.
    */
   static dot(a: Vector3, b: Vector3): number {
     return vDot(a.#offset, b.#offset);
+  }
+
+  /**
+   * Calculates the dot product of two vectors. (TypeScript version)
+   * @param a The first vector.
+   * @param b The second vector.
+   */
+  static dot_ts(a: [number, number, number], b: [number, number, number]): number {
+    const [ax, ay, az] = a;
+    const [bx, by, bz] = b;
+    return ax * bx + ay * by + az * bz;
   }
 
   /**
@@ -184,6 +240,14 @@ export class Vector3 implements Disposable {
   }
 
   /**
+   * Calculates the length of the vector. (TypeScript version)
+   */
+  static length_ts(vector: [number, number, number]): number {
+    const [x, y, z] = vector;
+    return Math.sqrt(x * x + y * y + z * z);
+  }
+
+  /**
    * Calculates the squared length of the vector.
    */
   lengthSquared(): number {
@@ -191,10 +255,43 @@ export class Vector3 implements Disposable {
   }
 
   /**
+   * Calculates the squared length of the vector. (TypeScript version)
+   */
+  static lengthSquared_ts(vector: [number, number, number]): number {
+    const [x, y, z] = vector;
+    return x * x + y * y + z * z;
+  }
+
+  /**
    * Normalizes the vector.
    */
   static normalize(vector: Vector3, result: Vector3): Vector3 {
     vNormalize(vector.#offset, result.#offset);
+    return result;
+  }
+
+  /**
+   * Normalizes the vector. (TypeScript version)
+   */
+  static normalize_ts(vector: [number, number, number], result: [number, number, number] = [0, 0, 0]): [number, number, number] {
+    const [x, y, z] = vector;
+    const lengthSquared = x * x + y * y + z * z;
+    if (lengthSquared < 0.000001) {
+      result[0] = 0;
+      result[1] = 0;
+      result[2] = 0;
+      return result;
+    }
+    if (lengthSquared === 1) {
+      result[0] = x;
+      result[1] = y;
+      result[2] = z;
+      return result;
+    }
+    const invLength = 1 / Math.sqrt(lengthSquared);
+    result[0] = x * invLength;
+    result[1] = y * invLength;
+    result[2] = z * invLength;
     return result;
   }
 }

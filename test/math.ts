@@ -1,0 +1,25 @@
+export { Vector3 } from "../dist/wasm-math.js";
+
+export type Vector = [number, number, number];
+
+export type VecX1RNumber = {
+  v: Vector;
+  result: number;
+};
+
+export type VecX2 = {
+  v: Vector;
+  result: Vector;
+}
+
+export type VecX2RNumber = {
+  v1: Vector;
+  v2: Vector;
+  result: number;
+};
+
+export type VecX3 = {
+  v1: Vector;
+  v2: Vector;
+  result: Vector;
+};
