@@ -1,0 +1,37 @@
+{
+  "name": "wasm-math",
+  "version": "0.0.2",
+  "description": "WebAssembly Math Library",
+  "type": "module",
+  "module": "./dist/wasm-math.js",
+  "types": "./dist/wasm-math.d.ts",
+  "license": "MIT",
+  "author": {
+    "name": "Andreas Friedel",
+    "email": "opensource@afe-gmdg.de"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AFE-GmdG/wasm-math.git"
+  },
+  "scripts": {
+    "prebuild": "rimraf dist",
+    "build": "rollup -c",
+    "buildwasm": "wat2wasm src/wat/math.wat -o src/wasm/math.wasm",
+    "pretest": "yarn build",
+    "test": "vitest --run",
+    "rr": "rimraf dist node_modules yarn.lock"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@rollup/plugin-terser": "0.4.4",
+    "@rollup/plugin-wasm": "6.2.2",
+    "rimraf": "6.0.1",
+    "rollup": "4.35.0",
+    "rollup-plugin-typescript2": "0.36.0",
+    "ts-loader": "9.5.2",
+    "tslib": "2.8.1",
+    "typescript": "5.8.2",
+    "vitest": "3.0.8"
+  }
+}

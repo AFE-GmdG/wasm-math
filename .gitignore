@@ -1,0 +1,12 @@
+# dependencies
+node_modules
+
+# production
+dist
+
+# wasm binaries in src
+src/wasm/*.wasm
+
+# misc
+yarn-debug.log*
+yarn-error.log*
