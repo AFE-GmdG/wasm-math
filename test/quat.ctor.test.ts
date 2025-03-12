@@ -23,6 +23,8 @@ test("Quaternion default ctor", () => {
     () => {
       using quat = new Quaternion();
 
+      quat.print("Default", 1);
+
       const [x, y, z, w] = quat.get();
       expect(x).toBe(0);
       expect(y).toBe(0);

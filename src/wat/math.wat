@@ -3,8 +3,9 @@
   (type $offsetX2 (func (param i32 i32)))
   (type $offsetX2Rf32 (func (param i32 i32) (result f32)))
   (type $offsetX3 (func (param i32 i32 i32)))
+  (type $quatDataOffset (func (param f32 f32 f32 f32 i32)))
 
-  (memory (export "memory") 6) ;; 6 pages of 64 KB each. 384 KB total
+  (memory (export "memory") 6 6) ;; 6 pages of 64 KB each. 384 KB total
   ;; Page   0: 0x00000 - 0x0FFFF  (64 KB): Vector3 storage
   ;; Page   1: 0x10000 - 0x1FFFF  (64 KB): Quaternion storage
   ;; Page 2-5: 0x20000 - 0x5FFFF (256 KB): Matrix4 storage
@@ -188,5 +189,101 @@
     ;; v128 multiply
     f32x4.mul                   ;; S offsetResult, result
     v128.store                  ;; S -
+  )
+
+  (func $mCreateRotQuat (export "mCreateRotQuat") (type $offsetX2) (param $offsetQuat i32) (param $offsetResult i32)
+    ;; Create a rotation matrix from a quaternion.
+    ;; This method reads the quaternion and uses the function $mCreateRotQuatData to create the matrix.
+
+    ;; local quaternion variable
+    (local $quat v128)
+
+    ;; Load the quaternion
+    local.get $offsetQuat       ;; S offsetQuat
+    v128.load                   ;; S quat
+
+    ;; set the quaternion to the local variable and keep it on the stack
+    local.tee $quat             ;; S quat
+
+    ;; put $quat.x on the stack
+    f32x4.extract_lane 0        ;; S x
+
+    ;; put $quat.y on the stack
+    local.get $quat             ;; S x, quat
+    f32x4.extract_lane 1        ;; S x, y
+
+    ;; put $quat.z on the stack
+    local.get $quat             ;; S x, y, quat
+    f32x4.extract_lane 2        ;; S x, y, z
+
+    ;; put $quat.w on the stack
+    local.get $quat             ;; S x, y, z, quat
+    f32x4.extract_lane 3        ;; S x, y, z, w
+
+    ;; put the offsetResult on the stack
+    local.get $offsetResult     ;; S x, y, z, w, offsetResult
+
+    ;; call the function $mCreateRotQuatData
+    call $mCreateRotQuatData    ;; S -
+  )
+
+  (func $mCreateRotQuatData (export "mCreateRotQuatData") (type $quatDataOffset) (param $x f32) (param $y f32) (param $z f32) (param $w f32) (param $offsetResult i32)
+    ;; Create a rotation matrix from quaternion data.
+
+    ;; column major order matrix
+    ;; | 1 - 2(yy + zz)       2(xy - wz)       2(xz + wy)   0 |
+    ;; |     2(xy + wz)   1 - 2(xx + zz)       2(yz - wx)   0 |
+    ;; |     2(xz - wy)       2(yz + wx)   1 - 2(xx + yy)   0 |
+    ;; |              0                0                0   1 |
+
+    ;; The algorithm in Typescript is:
+
+    ;; const x2 = x + x; const y2 = y + y; const z2 = z + z;
+
+    ;; const xx = x * x2; const xy = x * y2; const xz = x * z2;
+    ;; const yy = y * y2; const yz = y * z2; const zz = z * z2;
+    ;; const wx = w * x2; const wy = w * y2; const wz = w * z2;
+
+    ;; dst.set([
+    ;;   1 - (yy + zz), xy + wz, xz - wy, 0,
+    ;;   xy - wz, 1 - (xx + zz), yz + wx, 0,
+    ;;   xz + wy, yz - wx, 1 - (xx + yy), 0,
+    ;;   0, 0, 0, 1
+    ;; ]);
+
+    ;; According to the distributive law, 2(a±b) = 2a±2b
+    ;; So, we can simplify some in between calculations to reduce
+    ;; the number of operations.
+    ;; For example, instead of calculating 1 - 2(yy + zz) we can
+    ;; calculate 1 - (2y² + 2z²)
+    ;; We precalculate all necessary value combinations to reduce
+    ;; the number of operations.
+
+    ;; Further in WebAssembly we can utilize the SIMD instructions
+    ;; to perform the calculations in parallel.
+    ;; Therefore, we reorder some of the precalculating steps to
+    ;; reduce the number of local.get and local.set operations.
+
+    ;; local variables:
+    (local $2x_2y_2z_unused v128) ;; to store 2x, 2y, 2z, (unused)
+
+    ;; put the offsetResult on the stack
+    local.get $offsetResult       ;; S offsetResult
+
+    ;; construct 2x, 2y, 2z, 0
+    f32.const 0.0                 ;; S offsetResult, 0.0
+    f32x4.splat                   ;; S offsetResult, (0.0, 0.0, 0.0, 0.0)
+    local.get $x                  ;; S offsetResult, (0.0, 0.0, 0.0, 0.0), x
+    f32x4.replace_lane 0          ;; S offsetResult, (x, 0.0, 0.0, 0.0)
+    local.get $y                  ;; S offsetResult, (x, 0.0, 0.0, 0.0), y
+    f32x4.replace_lane 1          ;; S offsetResult, (x, y, 0.0, 0.0)
+    local.get $z                  ;; S offsetResult, (x, y, 0.0, 0.0), z
+    f32x4.replace_lane 2          ;; S offsetResult, (x, y, z, 0.0)
+
+    local.tee $2x_2y_2z_unused    ;; S offsetResult, (x, y, z, 0)
+    local.get $2x_2y_2z_unused    ;; S offsetResult, (x, y, z, 0), (x, y, z, 0)
+    f32x4.add                     ;; S offsetResult, (2x, 2y, 2z, 0)
+    ;; local.set $2x_2y_2z_unused    ;; S offsetResult
+    v128.store                    ;; S -
   )
 )

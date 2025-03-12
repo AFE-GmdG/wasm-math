@@ -1,11 +1,6 @@
-import math, { MathInstance } from "./wasm/math.wasm";
-
-const mathModule = await math();
-
-const mathInstance = await WebAssembly.instantiate(mathModule) as unknown as MathInstance;
-
-const {
+import {
   memory,
+
   vAdd,
   vSub,
   vCross,
@@ -13,7 +8,7 @@ const {
   vLength,
   vLengthSquared,
   vNormalize,
-} = mathInstance.exports;
+} from "./math";
 
 // Array of Vector3 instances. The index * 16 is the offset in the memory.
 const privateOffsetArray: (Vector3 | null)[] = new Array(4096).fill(null);
@@ -25,6 +20,8 @@ let firstFreePermanentOffset = 0;
 // Temporary Vector3 indices are calculated from the end of the memory page.
 let firstFreeTemporaryOffset = 4095;
 
+export type Vector3Data = [number, number, number];
+
 export class Vector3 implements Disposable {
   #view: Float32Array;
   #index: number;
@@ -32,9 +29,9 @@ export class Vector3 implements Disposable {
   #isTemporary: boolean;
 
   constructor();
-  constructor([x, y, z]: [number, number, number]);
+  constructor([x, y, z]: Vector3Data);
   constructor(tmp: boolean);
-  constructor(vecOrTmp?: [number, number, number] | boolean) {
+  constructor(vecOrTmp?: Vector3Data | boolean) {
     if (typeof vecOrTmp === "boolean") {
       this.#isTemporary = vecOrTmp;
       if (this.#isTemporary) {
@@ -125,7 +122,7 @@ export class Vector3 implements Disposable {
   /**
    * Gets all three components of the vector as tuple.
    */
-  get(): [number, number, number] {
+  get(): Vector3Data {
     return [this.#view[0], this.#view[1], this.#view[2]];
   }
 
@@ -133,7 +130,7 @@ export class Vector3 implements Disposable {
    * Sets all three components of the vector at once.
    * @param vector [x, y, z] Tuple with the new values for the vector.
    */
-  set([x, y, z]: [number, number, number]): void;
+  set([x, y, z]: Vector3Data): void;
   /**
    * Sets all three components of the vector at once.
    * @param x The new x value.
@@ -141,7 +138,7 @@ export class Vector3 implements Disposable {
    * @param z The new z value.
    */
   set(x: number, y: number, z: number): void;
-  set(x: [number, number, number] | number, y?: number, z?: number): void {
+  set(x: Vector3Data | number, y?: number, z?: number): void {
     if (typeof x === "number") {
       this.#view.set([x, y!, z!]);
     } else {
@@ -166,7 +163,7 @@ export class Vector3 implements Disposable {
    * @param b The second vector.
    * @param result The result vector.
    */
-  static add_ts(a: [number, number, number], b: [number, number, number], result: [number, number, number] = [0, 0, 0]): [number, number, number] {
+  static add_ts(a: Vector3Data, b: Vector3Data, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [ax, ay, az] = a;
     const [bx, by, bz] = b;
     result[0] = ax + bx;
@@ -192,7 +189,7 @@ export class Vector3 implements Disposable {
    * @param b The second vector.
    * @param result The result vector.
    */
-  static sub_ts(a: [number, number, number], b: [number, number, number], result: [number, number, number] = [0, 0, 0]): [number, number, number] {
+  static sub_ts(a: Vector3Data, b: Vector3Data, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [ax, ay, az] = a;
     const [bx, by, bz] = b;
     result[0] = ax - bx;
@@ -218,7 +215,7 @@ export class Vector3 implements Disposable {
    * @param b The second vector.
    * @param result The result vector.
    */
-  static cross_ts(a: [number, number, number], b: [number, number, number], result: [number, number, number] = [0, 0, 0]): [number, number, number] {
+  static cross_ts(a: Vector3Data, b: Vector3Data, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [ax, ay, az] = a;
     const [bx, by, bz] = b;
     result[0] = ay * bz - az * by;
@@ -241,7 +238,7 @@ export class Vector3 implements Disposable {
    * @param a The first vector.
    * @param b The second vector.
    */
-  static dot_ts(a: [number, number, number], b: [number, number, number]): number {
+  static dot_ts(a: Vector3Data, b: Vector3Data): number {
     const [ax, ay, az] = a;
     const [bx, by, bz] = b;
     return ax * bx + ay * by + az * bz;
@@ -257,7 +254,7 @@ export class Vector3 implements Disposable {
   /**
    * Calculates the length of the vector. (TypeScript version)
    */
-  static length_ts(vector: [number, number, number]): number {
+  static length_ts(vector: Vector3Data): number {
     const [x, y, z] = vector;
     return Math.sqrt(x * x + y * y + z * z);
   }
@@ -272,7 +269,7 @@ export class Vector3 implements Disposable {
   /**
    * Calculates the squared length of the vector. (TypeScript version)
    */
-  static lengthSquared_ts(vector: [number, number, number]): number {
+  static lengthSquared_ts(vector: Vector3Data): number {
     const [x, y, z] = vector;
     return x * x + y * y + z * z;
   }
@@ -288,7 +285,7 @@ export class Vector3 implements Disposable {
   /**
    * Normalizes the vector. (TypeScript version)
    */
-  static normalize_ts(vector: [number, number, number], result: [number, number, number] = [0, 0, 0]): [number, number, number] {
+  static normalize_ts(vector: Vector3Data, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [x, y, z] = vector;
     const lengthSquared = x * x + y * y + z * z;
     if (lengthSquared < 0.000001) {

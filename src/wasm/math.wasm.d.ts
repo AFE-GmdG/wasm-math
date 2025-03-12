@@ -119,6 +119,27 @@ interface MathWasm {
    * @param offsetResult MemoryOffset of the result vector.
    */
   vBezier(offsetA: number, offsetB: number, offsetC: number, offsetD: number, t: number, offsetResult: number): void;
+
+  /**
+   * Creates a rotation matrix from a quaternion.
+   * The quaternion should be normalized.
+   *
+   * @param offsetQuat MemoryOffset of the rotation quaternion.
+   * @param offsetResult MemoryOffset of the result matrix.
+   */
+  mCreateRotQuat(offsetQuat: number, offsetResult: number): void;
+
+  /**
+   * Creates a rotation matrix from quaternion data.
+   * The quaternion should be normalized.
+   *
+   * @param x X value of the rotation quaternion.
+   * @param y Y value of the rotation quaternion.
+   * @param z Z value of the rotation quaternion.
+   * @param w W value of the rotation quaternion.
+   * @param offsetResult MemoryOffset of the result matrix.
+   */
+  mCreateRotQuatData(x: number, y: number, z: number, w: number, offsetResult: number): void;
 }
 
 export interface MathInstance {

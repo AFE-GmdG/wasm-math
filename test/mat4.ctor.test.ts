@@ -45,6 +45,8 @@ test("Matrix4 default ctor", () => {
     () => {
       using mat = new Matrix4();
 
+      mat.print("Default", 1);
+
       const [
         m00, m01, m02, m03,
         m10, m11, m12, m13,

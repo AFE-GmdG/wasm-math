@@ -1,12 +1,11 @@
-import math, { MathInstance } from "./wasm/math.wasm";
-
-const mathModule = await math();
-
-const mathInstance = await WebAssembly.instantiate(mathModule) as unknown as MathInstance;
-
-const {
+import {
   memory,
-} = mathInstance.exports;
+  mCreateRotQuat,
+  mCreateRotQuatData,
+} from "./math";
+import { Quaternion, QuaternionData } from "./quat";
+import { Vector3, Vector3Data } from "./vec3";
+
 
 // Array of Matrix4 instances. The index * 64 + 131072 is the offset in the memory.
 const privateOffsetArray: (Matrix4 | null)[] = new Array(4096).fill(null);
@@ -38,6 +37,13 @@ export class Matrix4 implements Disposable {
   constructor();
   /**
    * Creates a new Matrix4 instance.
+   * The instance will be temporary if tmp is true, otherwise permanent.
+   * The instance will be initialized to the identity matrix.
+   * @param tmp Whether the instance is temporary or not.
+   */
+  constructor(tmp: boolean);
+  /**
+   * Creates a new Matrix4 instance.
    * The instance will be permanent and initialized to the data.
    * @param m The matrix data.
    */
@@ -49,13 +55,6 @@ export class Matrix4 implements Disposable {
    * @param m The matrix data.
    */
   constructor(m: Matrix4Data, tmp: boolean);
-  /**
-   * Creates a new Matrix4 instance.
-   * The instance will be temporary if tmp is true, otherwise permanent.
-   * The instance will be initialized to the identity matrix.
-   * @param tmp Whether the instance is temporary
-   */
-  constructor(tmp: boolean);
   /**
    * Creates a new copy of the other Matrix4 instance.
    * The instance will be temporary or permanent depending on the other instance.
@@ -105,7 +104,7 @@ export class Matrix4 implements Disposable {
         firstFreeTemporaryOffset--;
       }
     } else {
-      if ( firstFreePermanentOffset > firstFreeTemporaryOffset) {
+      if (firstFreePermanentOffset > firstFreeTemporaryOffset) {
         throw new Error("Matrix4: out of memory!");
       }
       this.#index = firstFreePermanentOffset;
@@ -171,21 +170,40 @@ export class Matrix4 implements Disposable {
 
   /* Properties */
   get m00(): number { return this.#view[0]; }
+  set m00(value: number) { this.#view[0] = value; }
   get m01(): number { return this.#view[1]; }
+  set m01(value: number) { this.#view[1] = value; }
   get m02(): number { return this.#view[2]; }
+  set m02(value: number) { this.#view[2] = value; }
   get m03(): number { return this.#view[3]; }
+  set m03(value: number) { this.#view[3] = value; }
+
   get m10(): number { return this.#view[4]; }
+  set m10(value: number) { this.#view[4] = value; }
   get m11(): number { return this.#view[5]; }
+  set m11(value: number) { this.#view[5] = value; }
   get m12(): number { return this.#view[6]; }
+  set m12(value: number) { this.#view[6] = value; }
   get m13(): number { return this.#view[7]; }
+  set m13(value: number) { this.#view[7] = value; }
+
   get m20(): number { return this.#view[8]; }
+  set m20(value: number) { this.#view[8] = value; }
   get m21(): number { return this.#view[9]; }
+  set m21(value: number) { this.#view[9] = value; }
   get m22(): number { return this.#view[10]; }
+  set m22(value: number) { this.#view[10] = value; }
   get m23(): number { return this.#view[11]; }
+  set m23(value: number) { this.#view[11] = value; }
+
   get m30(): number { return this.#view[12]; }
+  set m30(value: number) { this.#view[12] = value; }
   get m31(): number { return this.#view[13]; }
+  set m31(value: number) { this.#view[13] = value; }
   get m32(): number { return this.#view[14]; }
+  set m32(value: number) { this.#view[14] = value; }
   get m33(): number { return this.#view[15]; }
+  set m33(value: number) { this.#view[15] = value; }
 
   /**
    * Gets all sixteen components of the matrix as tuple.
@@ -244,6 +262,155 @@ export class Matrix4 implements Disposable {
       ]);
     } else {
       this.#view.set(m00OrM);
+    }
+  }
+
+  static createTranslation(translation: Vector3): Matrix4;
+  static createTranslation(translation: Vector3, dst: Matrix4): Matrix4;
+  static createTranslation(translation: Vector3Data): Matrix4;
+  static createTranslation(translation: Vector3Data, dst: Matrix4): Matrix4;
+  static createTranslation(translation: Vector3 | Vector3Data, dst = new Matrix4()): Matrix4 {
+    const [tx, ty, tz] = translation instanceof Vector3
+      ? translation.get()
+      : translation;
+
+    dst.set([
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      tx, ty, tz, 1
+    ]);
+
+    return dst;
+  }
+
+  static createRotationX(radians: number): Matrix4;
+  static createRotationX(radians: number, dst: Matrix4): Matrix4;
+  static createRotationX(radians: number, dst = new Matrix4()): Matrix4 {
+    const c = Math.cos(radians);
+    const s = Math.sin(radians);
+
+    dst.set([
+      1, 0, 0, 0,
+      0, c, s, 0,
+      0, -s, c, 0,
+      0, 0, 0, 1
+    ]);
+
+    return dst;
+  }
+
+  static createRotationY(radians: number): Matrix4;
+  static createRotationY(radians: number, dst: Matrix4): Matrix4;
+  static createRotationY(radians: number, dst = new Matrix4()): Matrix4 {
+    const c = Math.cos(radians);
+    const s = Math.sin(radians);
+
+    dst.set([
+      c, 0, -s, 0,
+      0, 1, 0, 0,
+      s, 0, c, 0,
+      0, 0, 0, 1
+    ]);
+
+    return dst;
+  }
+
+  static createRotationZ(radians: number): Matrix4;
+  static createRotationZ(radians: number, dst: Matrix4): Matrix4;
+  static createRotationZ(radians: number, dst = new Matrix4()): Matrix4 {
+    const c = Math.cos(radians);
+    const s = Math.sin(radians);
+
+    dst.set([
+      c, s, 0, 0,
+      -s, c, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    ]);
+
+    return dst;
+  }
+
+  static createRotation(quaternion: Quaternion): Matrix4;
+  static createRotation(quaternion: Quaternion, dst: Matrix4): Matrix4;
+  static createRotation(quaternion: QuaternionData): Matrix4;
+  static createRotation(quaternion: QuaternionData, dst: Matrix4): Matrix4;
+  static createRotation(quaternion: Quaternion | QuaternionData, dst = new Matrix4()): Matrix4 {
+    if (quaternion instanceof Quaternion) {
+      mCreateRotQuat(quaternion.offset, dst.#offset);
+    } else {
+      const [x, y, z, w] = quaternion;
+      mCreateRotQuatData(x, y, z, w, dst.#offset);
+    }
+
+    return dst;
+  }
+
+  static createRotation_ts(quaternion: Quaternion): Matrix4;
+  static createRotation_ts(quaternion: Quaternion, dst: Matrix4): Matrix4;
+  static createRotation_ts(quaternion: QuaternionData): Matrix4;
+  static createRotation_ts(quaternion: QuaternionData, dst: Matrix4): Matrix4;
+  static createRotation_ts(quaternion: Quaternion | QuaternionData, dst = new Matrix4()): Matrix4 {
+    const [x, y, z, w] = quaternion instanceof Quaternion
+      ? quaternion.get()
+      : quaternion;
+
+    const x2 = x + x; const y2 = y + y; const z2 = z + z;
+    const xx = x * x2; const xy = x * y2; const xz = x * z2;
+    const yy = y * y2; const yz = y * z2; const zz = z * z2;
+    const wx = w * x2; const wy = w * y2; const wz = w * z2;
+
+    dst.set([
+      1 - (yy + zz), xy + wz, xz - wy, 0,
+      xy - wz, 1 - (xx + zz), yz + wx, 0,
+      xz + wy, yz - wx, 1 - (xx + yy), 0,
+      0, 0, 0, 1
+    ]);
+
+    return dst;
+  }
+
+  print(
+    name: string = "",
+    precision: number = 3,
+    asColumnMajor: boolean = false,
+  ) {
+    const [
+      xx, xy, xz, xw,
+      yx, yy, yz, yw,
+      zx, zy, zz, zw,
+      wx, wy, wz, ww,
+    ] = this.get();
+
+    const sxx = xx.toFixed(precision); const sxy = xy.toFixed(precision); const sxz = xz.toFixed(precision); const sxw = xw.toFixed(precision);
+    const syx = yx.toFixed(precision); const syy = yy.toFixed(precision); const syz = yz.toFixed(precision); const syw = yw.toFixed(precision);
+    const szx = zx.toFixed(precision); const szy = zy.toFixed(precision); const szz = zz.toFixed(precision); const szw = zw.toFixed(precision);
+    const swx = wx.toFixed(precision); const swy = wy.toFixed(precision); const swz = wz.toFixed(precision); const sww = ww.toFixed(precision);
+
+    const maxLength = Math.max(
+      sxx.length, sxy.length, sxz.length, sxw.length,
+      syx.length, syy.length, syz.length, syw.length,
+      szx.length, szy.length, szz.length, szw.length,
+      swx.length, swy.length, swz.length, sww.length,
+    );
+
+    if (asColumnMajor) {
+      console.log(
+        `${name.trim().length ? `${name} ` : ""}Matrix 4x4 (Column Major):\n` +
+        `| ${sxx.padStart(maxLength)} ${syx.padStart(maxLength)} ${szx.padStart(maxLength)} ${swx.padStart(maxLength)} |\n` +
+        `| ${sxy.padStart(maxLength)} ${syy.padStart(maxLength)} ${szy.padStart(maxLength)} ${swy.padStart(maxLength)} |\n` +
+        `| ${sxz.padStart(maxLength)} ${syz.padStart(maxLength)} ${szz.padStart(maxLength)} ${swz.padStart(maxLength)} |\n` +
+        `| ${sxw.padStart(maxLength)} ${syw.padStart(maxLength)} ${szw.padStart(maxLength)} ${sww.padStart(maxLength)} |`,
+      );
+    } else {
+      console.log(
+        `${name.trim().length ? `${name} ` : ""}Matrix 4x4 (Row Major):\n` +
+        `| ${sxx.padStart(maxLength)} ${sxy.padStart(maxLength)} ${sxz.padStart(maxLength)} ${sxw.padStart(maxLength)} |\n` +
+        `| ${syx.padStart(maxLength)} ${syy.padStart(maxLength)} ${syz.padStart(maxLength)} ${syw.padStart(maxLength)} |\n` +
+        `| ${szx.padStart(maxLength)} ${szy.padStart(maxLength)} ${szz.padStart(maxLength)} ${szw.padStart(maxLength)} |\n` +
+        `| ${swx.padStart(maxLength)} ${swy.padStart(maxLength)} ${swz.padStart(maxLength)} ${sww.padStart(maxLength)} |`,
+      );
     }
   }
 }
