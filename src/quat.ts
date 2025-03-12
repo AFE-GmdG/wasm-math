@@ -93,4 +93,55 @@ export class Quaternion implements Disposable {
       }
     }
   }
+
+  /**
+   * Calculates some statistics about the memory usage.
+   */
+  static getStatistics() {
+    // count free slots
+    const freeSlots = privateOffsetArray.filter((v) => v === null).length;
+    return {
+      freeSlots,
+      firstFreePermanentOffset,
+      firstFreeTemporaryOffset,
+    };
+  }
+
+  /* Properties */
+  get x(): number { return this.#view[0]; }
+  set x(value: number) { this.#view[0] = value; }
+  get y(): number { return this.#view[1]; }
+  set y(value: number) { this.#view[1] = value; }
+  get z(): number { return this.#view[2]; }
+  set z(value: number) { this.#view[2] = value; }
+  get w(): number { return this.#view[3]; }
+  set w(value: number) { this.#view[3] = value; }
+
+  /**
+   * Gets all four components of the quaternion as tuple.
+   */
+  get(): [number, number, number, number] {
+    return [this.#view[0], this.#view[1], this.#view[2], this.#view[3]];
+  }
+
+  /**
+   * Sets all four components of the quaternion at once.
+   * @param quat [x, y, z, w] Tuple with the new values for the quaternion.
+   */
+  set([x, y, z, w]: [number, number, number, number]): void;
+  /**
+   * Sets all four components of the quaternion at once.
+   * @param x The new x value for the quaternion.
+   * @param y The new y value for the quaternion.
+   * @param z The new z value for the quaternion.
+   * @param w The new w value for the quaternion.
+   */
+  set(x: number, y: number, z: number, w: number): void;
+  set(xOrQuat: [number, number, number, number] | number, y?: number, z?: number, w?: number): void {
+    if (typeof xOrQuat === "number") {
+      this.#view.set([xOrQuat, y!, z!, w!]);
+    } else {
+      this.#view.set(xOrQuat);
+    }
+  }
 }
