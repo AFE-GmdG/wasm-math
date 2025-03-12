@@ -1,4 +1,9 @@
-export { Vector3, Quaternion } from "../dist/wasm-math.js";
+export {
+  Vector3,
+  Quaternion,
+  Matrix4,
+  Matrix4Data,
+} from "../dist/wasm-math.js";
 
 export type Vector = [number, number, number];
 export type Quat = [number, number, number, number];
@@ -31,4 +36,8 @@ export type VecX3 = {
 
 export type QuatX1 = {
   q: Quat;
+};
+
+export type MatX1 = {
+  m: Matrix4Data;
 };
