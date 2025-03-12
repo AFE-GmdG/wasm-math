@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { Vector3, VecX3 } from "./math";
+import { Vector3, VecX2, VecX3 } from "./math";
 
 test.each<VecX3>([
   { v1: [1, 2, 3], v2: [4, 5, 6], result: [5, 7, 9] },
@@ -26,6 +26,34 @@ test.each<VecX3>([
   Vector3.add_ts(v1, v2, result);
 
   const [rx, ry, rz] = result;
+  expect(rx).closeTo(result[0], 0.0001);
+  expect(ry).closeTo(result[1], 0.0001);
+  expect(rz).closeTo(result[2], 0.0001);
+});
+
+test.each<VecX2>([
+  { v: [1, 2, -1], result: [2, 4, -2] },
+  { v: [0.2, -1.1, 0.0], result: [0.4, -2.2, 0.0] },
+  { v: [0, 0, 0], result: [0, 0, 0] },
+])("Vector2-Addition with same Vector: $v + $v = $result", ({ v, result }) => {
+  using vec = new Vector3(v);
+
+  Vector3.add(vec, vec, vec);
+
+  const [rx, ry, rz] = vec.get();
+  expect(rx).closeTo(result[0], 0.0001);
+  expect(ry).closeTo(result[1], 0.0001);
+  expect(rz).closeTo(result[2], 0.0001);
+});
+
+test.each<VecX2>([
+  { v: [1, 2, -1], result: [2, 4, -2] },
+  { v: [0.2, -1.1, 0.0], result: [0.4, -2.2, 0.0] },
+  { v: [0, 0, 0], result: [0, 0, 0] },
+])("Vector2-Addition with same Vector (TypeScript Version): $v + $v = $result", ({ v, result }) => {
+  Vector3.add_ts(v, v, v);
+
+  const [rx, ry, rz] = v;
   expect(rx).closeTo(result[0], 0.0001);
   expect(ry).closeTo(result[1], 0.0001);
   expect(rz).closeTo(result[2], 0.0001);
