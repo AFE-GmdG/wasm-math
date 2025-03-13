@@ -261,29 +261,207 @@
 
     ;; Further in WebAssembly we can utilize the SIMD instructions
     ;; to perform the calculations in parallel.
-    ;; Therefore, we reorder some of the precalculating steps to
-    ;; reduce the number of local.get and local.set operations.
 
     ;; local variables:
     (local $2x_2y_2z_unused v128) ;; to store 2x, 2y, 2z, (unused)
+    (local $tmp v128)             ;; to store temporary values
+    (local $xx f32)               ;; to store xx
+    (local $xy f32)               ;; to store xy
+    (local $xz f32)               ;; to store xz
+    (local $yy f32)               ;; to store yy
+    (local $yz f32)               ;; to store yz
+    (local $zz f32)               ;; to store zz
+    (local $wx f32)               ;; to store wx
+    (local $wy f32)               ;; to store wy
+    (local $wz f32)               ;; to store wz
 
-    ;; put the offsetResult on the stack
-    local.get $offsetResult       ;; S offsetResult
-
+    ;; const x2 = x + x; const y2 = y + y; const z2 = z + z;
     ;; construct 2x, 2y, 2z, 0
-    f32.const 0.0                 ;; S offsetResult, 0.0
-    f32x4.splat                   ;; S offsetResult, (0.0, 0.0, 0.0, 0.0)
-    local.get $x                  ;; S offsetResult, (0.0, 0.0, 0.0, 0.0), x
-    f32x4.replace_lane 0          ;; S offsetResult, (x, 0.0, 0.0, 0.0)
-    local.get $y                  ;; S offsetResult, (x, 0.0, 0.0, 0.0), y
-    f32x4.replace_lane 1          ;; S offsetResult, (x, y, 0.0, 0.0)
-    local.get $z                  ;; S offsetResult, (x, y, 0.0, 0.0), z
-    f32x4.replace_lane 2          ;; S offsetResult, (x, y, z, 0.0)
+    f32.const 0.0                 ;; S 0.0
+    f32x4.splat                   ;; S (0.0, 0.0, 0.0, 0.0)
+    local.get $x                  ;; S (0.0, 0.0, 0.0, 0.0), x
+    f32x4.replace_lane 0          ;; S (x, 0.0, 0.0, 0.0)
+    local.get $y                  ;; S (x, 0.0, 0.0, 0.0), y
+    f32x4.replace_lane 1          ;; S (x, y, 0.0, 0.0)
+    local.get $z                  ;; S (x, y, 0.0, 0.0), z
+    f32x4.replace_lane 2          ;; S (x, y, z, 0.0)
 
-    local.tee $2x_2y_2z_unused    ;; S offsetResult, (x, y, z, 0)
-    local.get $2x_2y_2z_unused    ;; S offsetResult, (x, y, z, 0), (x, y, z, 0)
-    f32x4.add                     ;; S offsetResult, (2x, 2y, 2z, 0)
-    ;; local.set $2x_2y_2z_unused    ;; S offsetResult
+    local.tee $2x_2y_2z_unused    ;; S (x, y, z, 0)
+    local.get $2x_2y_2z_unused    ;; S (x, y, z, 0), (x, y, z, 0)
+    f32x4.add                     ;; S (2x, 2y, 2z, 0)
+    ;; update the local variable with the result and keep it on the stack
+    local.tee $2x_2y_2z_unused    ;; S (2x, 2y, 2z, 0)
+
+    ;; const xx = x * x2; const xy = x * y2; const xz = x * z2;
+    ;; construct (x, x, x, x) - The 4th lane (x) can be ignored, it will be multiplied with 0
+    local.get $x                  ;; S (2x, 2y, 2z, 0), x
+    f32x4.splat                   ;; S (2x, 2y, 2z, 0), (x, x, x, x)
+    f32x4.mul                     ;; S (xx, xy, xz, 0)
+    local.tee $tmp                ;; S (xx, xy, xz, 0)
+    f32x4.extract_lane 0          ;; S xx
+    local.set $xx                 ;; S -
+    local.get $tmp                ;; S (xx, xy, xz, 0)
+    f32x4.extract_lane 1          ;; S xy
+    local.set $xy                 ;; S -
+    local.get $tmp                ;; S (xx, xy, xz, 0)
+    f32x4.extract_lane 2          ;; S xz
+    local.set $xz                 ;; S -
+
+    ;; const yy = y * y2; const yz = y * z2; const zz = z * z2;
+    ;; construct (y2, z2, z2, 0)
+    local.get $2x_2y_2z_unused    ;; S (2x, 2y, 2z, 0)
+    ;; Swizzle on Stack to (y2, z2, z2, _w2)
+    v128.const i32x4 0x07060504 0x0b0a0908 0x0b0a0908 0x0f0e0d0c ;; S (2x, 2y, 2z, 0), swizzle params
+    i8x16.swizzle                 ;; S (y2, z2, z2, 0)
+
+    ;; construct y, y, z, y
+    ;; The 3rd lane (z) must be set with replace_lane 2
+    ;; The 4th lane (y) can be ignored, it will be multiplied with 0
+    local.get $y                  ;; S (y2, z2, z2, 0), y
+    f32x4.splat                   ;; S (y2, z2, z2, 0), (y, y, y, y)
+    local.get $z                  ;; S (y2, z2, z2, 0), (y, y, y, y), z
+    f32x4.replace_lane 2          ;; S (y2, z2, z2, 0), (y, y, z, y)
+    f32x4.mul                     ;; S (yy, yz, zz, 0)
+    local.tee $tmp                ;; S (yy, yz, zz, 0)
+    f32x4.extract_lane 0          ;; S yy
+    local.set $yy                 ;; S -
+    local.get $tmp                ;; S (yy, yz, zz, 0)
+    f32x4.extract_lane 1          ;; S yz
+    local.set $yz                 ;; S -
+    local.get $tmp                ;; S (yy, yz, zz, 0)
+    f32x4.extract_lane 2          ;; S zz
+    local.set $zz                 ;; S -
+
+    ;; const wx = w * x2; const wy = w * y2; const wz = w * z2;
+    ;; construct (w, w, w, w) - The 4th lane (w) can be ignored, it will be multiplied with 0
+    local.get $2x_2y_2z_unused    ;; S (2x, 2y, 2z, 0)
+    local.get $w                  ;; S (2x, 2y, 2z, 0), w
+    f32x4.splat                   ;; S (2x, 2y, 2z, 0), (w, w, w, w)
+    f32x4.mul                     ;; S (wx, wy, wz, 0)
+    local.tee $tmp                ;; S (wx, wy, wz, 0)
+    f32x4.extract_lane 0          ;; S wx
+    local.set $wx                 ;; S -
+    local.get $tmp                ;; S (wx, wy, wz, 0)
+    f32x4.extract_lane 1          ;; S wy
+    local.set $wy                 ;; S -
+    local.get $tmp                ;; S (wx, wy, wz, 0)
+    f32x4.extract_lane 2          ;; S wz
+    local.set $wz                 ;; S -
+
+    ;; put the offset result addresses for the matrix on the stack
+    ;; construct (offsetResult + 48), (offsetResult + 32), (offsetResult + 16), offsetResult
+    ;; put the offsetResult on the stack and add 48
+    local.get $offsetResult       ;; S offsetResult
+    i32.const 48                  ;; S offsetResult, 48
+    i32.add                       ;; S (offsetResult + 48)
+    ;; put the offsetResult on the stack and add 32
+    local.get $offsetResult       ;; S (offsetResult + 48), offsetResult
+    i32.const 32                  ;; S (offsetResult + 48), offsetResult, 32
+    i32.add                       ;; S (offsetResult + 48), (offsetResult + 32)
+    ;; put the offsetResult on the stack and add 16
+    local.get $offsetResult       ;; S (offsetResult + 48), (offsetResult + 32), offsetResult
+    i32.const 16                  ;; S (offsetResult + 48), (offsetResult + 32), offsetResult, 16
+    i32.add                       ;; S (offsetResult + 48), (offsetResult + 32), (offsetResult + 16)
+    ;; put the offsetResult on the stack
+    local.get $offsetResult       ;; S (offsetResult + 48), (offsetResult + 32), (offsetResult + 16), offsetResult
+
+    ;; dst.set([
+    ;;   1 - (yy + zz), xy + wz, xz - wy, 0,
+    ;;   xy - wz, 1 - (xx + zz), yz + wx, 0,
+    ;;   xz + wy, yz - wx, 1 - (xx + yy), 0,
+    ;;   0, 0, 0, 1
+    ;; ]);
+
+    ;; construct (1 - (yy + zz), xy + wz, xz - wy, 0)
+    ;; construct (0, 0, 0, 0)
+    f32.const 0.0                 ;; S (offsetResults...), 0.0
+    f32x4.splat                   ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0)
+    ;; calculate 1 - (yy + zz)
+    f32.const 1.0                 ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), 1.0
+    local.get $yy                 ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), 1.0, yy
+    local.get $zz                 ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), 1.0, yy, zz
+    f32.add                       ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), 1.0, (yy + zz)
+    f32.sub                       ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), (1 - (yy + zz))
+    f32x4.replace_lane 0          ;; S (offsetResults...), (1 - (yy + zz), 0.0, 0.0, 0.0)
+
+    ;; calculate xy + wz
+    local.get $xy                 ;; S (offsetResults...), (1 - (yy + zz), 0.0, 0.0, 0.0), xy
+    local.get $wz                 ;; S (offsetResults...), (1 - (yy + zz), 0.0, 0.0, 0.0), xy, wz
+    f32.add                       ;; S (offsetResults...), (1 - (yy + zz), xy + wz, 0.0, 0.0), (xy + wz)
+    f32x4.replace_lane 1          ;; S (offsetResults...), (1 - (yy + zz), xy + wz, 0.0, 0.0)
+
+    ;; calculate xz - wy
+    local.get $xz                 ;; S (offsetResults...), (1 - (yy + zz), xy + wz, 0.0, 0.0), xz
+    local.get $wy                 ;; S (offsetResults...), (1 - (yy + zz), xy + wz, 0.0, 0.0), xz, wy
+    f32.sub                       ;; S (offsetResults...), (1 - (yy + yz), xy + wz, 0.0, 0.0), (xz - wy)
+    f32x4.replace_lane 2          ;; S (offsetResults...), (1 - (yy + yz), xy + wz, xz - wy, 0.0)
+
+    ;; store the first column
+    v128.store                    ;; S (offsetResult + 48), (offsetResult + 32), (offsetResult + 16)
+
+    ;; construct (xy - wz, 1 - (xx + zz), yz + wx, 0)
+    ;; construct (0, 0, 0, 0)
+    f32.const 0.0                 ;; S (offsetResults...), 0.0
+    f32x4.splat                   ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0)
+
+    ;; calculate xy - wz
+    local.get $xy                 ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), xy
+    local.get $wz                 ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), xy, wz
+    f32.sub                       ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), (xy - wz)
+    f32x4.replace_lane 0          ;; S (offsetResults...), (xy - wz, 0.0, 0.0, 0.0)
+
+    ;; calculate 1 - (xx + zz)
+    f32.const 1.0                 ;; S (offsetResults...), (xy - wz, 0.0, 0.0, 0.0), 1.0
+    local.get $xx                 ;; S (offsetResults...), (xy - wz, 0.0, 0.0, 0.0), 1.0, xx
+    local.get $zz                 ;; S (offsetResults...), (xy - wz, 0.0, 0.0, 0.0), 1.0, xx, zz
+    f32.add                       ;; S (offsetResults...), (xy - wz, 0.0, 0.0, 0.0), 1.0, (xx + zz)
+    f32.sub                       ;; S (offsetResults...), (xy - wz, 0.0, 0.0, 0.0), (1 - (xx + zz))
+    f32x4.replace_lane 1          ;; S (offsetResults...), (xy - wz, 1 - (xx + zz), 0.0, 0.0)
+
+    ;; calculate yz + wx
+    local.get $yz                 ;; S (offsetResults...), (xy - wz, 1 - (xx + zz), 0.0, 0.0), yz
+    local.get $wx                 ;; S (offsetResults...), (xy - wz, 1 - (xx + zz), 0.0, 0.0), yz, wx
+    f32.add                       ;; S (offsetResults...), (xy - wz, 1 - (xx + zz), yz + wx, 0.0), (yz + wx)
+    f32x4.replace_lane 2          ;; S (offsetResults...), (xy - wz, 1 - (xx + zz), yz + wx, 0.0)
+
+    ;; store the second column
+    v128.store                    ;; S (offsetResult + 48), (offsetResult + 32)
+
+    ;; construct (xz + wy, yz - wx, 1 - (xx + yy), 0)
+    ;; construct (0, 0, 0, 0)
+    f32.const 0.0                 ;; S (offsetResults...), 0.0
+    f32x4.splat                   ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0)
+
+    ;; calculate xz + wy
+    local.get $xz                 ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), xz
+    local.get $wy                 ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), xz, wy
+    f32.add                       ;; S (offsetResults...), (0.0, 0.0, 0.0, 0.0), (xz + wy)
+    f32x4.replace_lane 0          ;; S (offsetResults...), (xz + wy, 0.0, 0.0, 0.0)
+
+    ;; calculate yz - wx
+    local.get $yz                 ;; S (offsetResults...), (xz + wy, 0.0, 0.0, 0.0), yz
+    local.get $wx                 ;; S (offsetResults...), (xz + wy, 0.0, 0.0, 0.0), yz, wx
+    f32.sub                       ;; S (offsetResults...), (xz + wy, 0.0, 0.0, 0.0), (yz - wx)
+    f32x4.replace_lane 1          ;; S (offsetResults...), (xz + wy, yz - wx, 0.0, 0.0)
+
+    ;; calculate 1 - (xx + yy)
+    f32.const 1.0                 ;; S (offsetResults...), (xz + wy, yz - wx, 0.0, 0.0), 1.0
+    local.get $xx                 ;; S (offsetResults...), (xz + wy, yz - wx, 0.0, 0.0), 1.0, xx
+    local.get $yy                 ;; S (offsetResults...), (xz + wy, yz - wx, 0.0, 0.0), 1.0, xx, yy
+    f32.add                       ;; S (offsetResults...), (xz + wy, yz - wx, 0.0, 0.0), 1.0, (xx + yy)
+    f32.sub                       ;; S (offsetResults...), (xz + wy, yz - wx, 0.0, 0.0), (1 - (xx + yy))
+    f32x4.replace_lane 2          ;; S (offsetResults...), (xz + wy, yz - wx, 1 - (xx + yy), 0.0)
+
+    ;; store the third column
+    v128.store                    ;; S (offsetResult + 48)
+
+    ;; construct (0, 0, 0, 1)
+    f32.const 0.0                 ;; S 0.0
+    f32x4.splat                   ;; S (0.0, 0.0, 0.0, 0.0)
+    f32.const 1.0                 ;; S (0.0, 0.0, 0.0, 0.0), 1.0
+    f32x4.replace_lane 3          ;; S (0.0, 0.0, 0.0, 1.0)
+
+    ;; store the fourth column
     v128.store                    ;; S -
   )
 )
