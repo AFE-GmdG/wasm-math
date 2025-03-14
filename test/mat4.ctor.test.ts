@@ -1,5 +1,5 @@
 import { test, expect } from "vitest";
-import { Matrix4, Matrix4Data, MatX1 } from "./math";
+import { Matrix4, Matrix4Data } from "./math";
 
 // define some usefule matrices
 const identity: Matrix4Data = [

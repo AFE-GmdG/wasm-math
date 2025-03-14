@@ -1,43 +1,57 @@
 export {
   Vector3,
+  Vector3Data,
   Quaternion,
+  QuaternionData,
   Matrix4,
   Matrix4Data,
 } from "../dist/wasm-math.js";
 
-export type Vector = [number, number, number];
-export type Quat = [number, number, number, number];
-
 export type VecX1 = {
-  v: Vector;
+  v: Vector3Data;
 };
 
 export type VecX1RNumber = {
-  v: Vector;
+  v: Vector3Data;
   result: number;
 };
 
+export type VecX1MatX1 = {
+  v: Vector3Data;
+  m: Matrix4Data;
+};
+
 export type VecX2 = {
-  v: Vector;
-  result: Vector;
-}
+  v: Vector3Data;
+  result: Vector3Data;
+};
 
 export type VecX2RNumber = {
-  v1: Vector;
-  v2: Vector;
+  v1: Vector3Data;
+  v2: Vector3Data;
   result: number;
 };
 
 export type VecX3 = {
-  v1: Vector;
-  v2: Vector;
-  result: Vector;
+  v1: Vector3Data;
+  v2: Vector3Data;
+  result: Vector3Data;
 };
 
 export type QuatX1 = {
-  q: Quat;
+  q: QuaternionData;
+};
+
+export type QuatX1MatX1 = {
+  q: QuaternionData;
+  m: Matrix4Data;
 };
 
 export type MatX1 = {
+  m: Matrix4Data;
+};
+
+export type NumberMatX1 = {
+  n: number;
   m: Matrix4Data;
 };

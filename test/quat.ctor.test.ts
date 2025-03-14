@@ -33,8 +33,8 @@ test("Quaternion default ctor", () => {
 
       const statistics2 = Quaternion.getStatistics();
       expect(statistics2.freeSlots).toBe(4095);
-      expect(statistics2.firstFreePermanentOffset).toBe(1);
-      expect(statistics2.firstFreeTemporaryOffset).toBe(4095);
+      expect(statistics2.firstFreePermanentOffset).toBe(0);
+      expect(statistics2.firstFreeTemporaryOffset).toBe(4094);
     },
   ).not.toThrow();
 
