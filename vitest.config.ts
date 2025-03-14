@@ -6,9 +6,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    reporters: process.env.GITHUB_ACTIONS
-      ? ["dot", "github-actions"]
-      : ["dot"],
+    reporters: ["default", "junit"],
+    outputFile: {
+      junit: ".github/reports/junit.xml",
+    },
   },
   plugins: [
   ],
