@@ -18,15 +18,19 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x, 22.x]
+        node-version: [ 20, 22 ]
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        lfs: false
+        submodules: false
+
     - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - run: npm ci
-    - run: npm run build --if-present
-    - run: npm test
+        cache: 'yarn'
+
+    - run: npm buildwasm
+
