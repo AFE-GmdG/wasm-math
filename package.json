@@ -1,6 +1,6 @@
 {
-  "name": "wasm-math",
-  "version": "0.0.2",
+  "name": "@afegmdg/wasm-math",
+  "version": "0.1.0-beta",
   "description": "WebAssembly Math Library",
   "type": "module",
   "module": "./dist/wasm-math.js",

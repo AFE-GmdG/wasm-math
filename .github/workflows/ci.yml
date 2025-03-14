@@ -10,6 +10,7 @@ on:
     - develop
   pull_request:
     branches:
+    - develop
     - stable
 
 jobs:
