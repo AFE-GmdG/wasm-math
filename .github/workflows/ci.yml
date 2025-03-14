@@ -25,7 +25,6 @@ jobs:
       with:
         ref: https://github.com/emscripten-core/emsdk.git
         lfs: false
-        submodules: false
 
     - uses: actions/checkout@v4
       with:
