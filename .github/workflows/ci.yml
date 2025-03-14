@@ -55,4 +55,4 @@ jobs:
       if: always()
       with:
         files: |
-          .github\reports\junit.xml
+          /home/runner/work/wasm-math/wasm-math/.github/reports/junit.xml
