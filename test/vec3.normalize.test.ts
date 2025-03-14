@@ -12,7 +12,7 @@ test.each<VecX2>([
   { v: [1, 1, 1], result: [0.57735, 0.57735, 0.57735] },
   { v: [1, 2, 3], result: [0.26726, 0.53452, 0.80178] },
   { v: [0.2, -1.1, -0.9], result: [0.13935, -0.76641, -0.6271] },
-])(`Vector3-Normalization: normalize($v) = $result`, ({ v, result }) => {
+])("Vector3-Normalization: normalize($v) = $result", ({ v, result }) => {
   using vec = new Vector3(v);
   using resultVec = new Vector3(true);
 
@@ -35,7 +35,7 @@ test.each<VecX2>([
   { v: [1, 1, 1], result: [0.57735, 0.57735, 0.57735] },
   { v: [1, 2, 3], result: [0.26726, 0.53452, 0.80178] },
   { v: [0.2, -1.1, -0.9], result: [0.13935, -0.76641, -0.6271] },
-])(`Vector3-Normalization: (TypeScript Version) normalize($v) = $result`, ({ v, result }) => {
+])("Vector3-Normalization: (TypeScript Version) normalize($v) = $result", ({ v, result }) => {
   Vector3.normalize_ts(v, result);
 
   const [rx, ry, rz] = result;

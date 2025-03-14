@@ -201,10 +201,11 @@ export class Quaternion implements Disposable {
         `  ${sy.padStart(maxLength)}\n` +
         `  ${sz.padStart(maxLength)}\n` +
         `  ${sw.padStart(maxLength)}\n` +
-        `)`,
+        ")",
       );
     } else {
       console.log(
+        // eslint-disable-next-line max-len
         `${name.trim().length ? `${name} ` : ""}Quaternion (${sx.padStart(maxLength)}, ${sy.padStart(maxLength)}, ${sz.padStart(maxLength)}, ${sw.padStart(maxLength)})`,
       );
     }

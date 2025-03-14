@@ -49,7 +49,7 @@ test.each<QuatX1>([
   { q: [0.1, 0.2, 0.3, 0.4] },
   { q: [0.2, -1.1, -0.9, 0.3] },
   { q: [0, 0, 0, 1] },
-])(`Quaternion ctor($q)`, ({ q }) => {
+])("Quaternion ctor($q)", ({ q }) => {
   const statistics1 = Quaternion.getStatistics();
   expect(statistics1.freeSlots).toBe(4096);
   expect(statistics1.firstFreePermanentOffset).toBe(0);
