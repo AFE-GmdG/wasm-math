@@ -1,0 +1,59 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Node.js CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - develop
+  pull_request:
+    branches:
+    - stable
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-24.04
+
+    strategy:
+      matrix:
+        node-version: [ 22 ]
+
+    steps:
+    - name: install wabt
+      run: sudo apt-get install wabt
+
+    - uses: actions/checkout@v4
+      with:
+        lfs: false
+        submodules: false
+
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+
+    - name: install dependencies
+      run: yarn
+
+    - name: build wasm
+      run: yarn buildwasm
+
+    - name: build
+      run: yarn build
+
+    - name: lint
+      run: yarn lint
+
+    - name: test
+      run: yarn test
+
+    - name: Publish Rest Result
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: |
+          /home/runner/work/wasm-math/wasm-math/.github/reports/junit.xml

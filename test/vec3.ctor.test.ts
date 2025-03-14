@@ -139,6 +139,7 @@ test("Vector3 Out of Memory", () => {
       // try to create one more
       expect(
         () => {
+          // eslint-disable-next-line tseslint/no-unused-vars
           const vec = new Vector3();
           expect.unreachable();
         },

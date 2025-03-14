@@ -39,9 +39,9 @@
     ],
   },
   "exclude": [
-    "**/test/**/*",
-    "**/dist/**/*",
-    "**/node_modules/**/*",
+    "test/**/*",
+    "dist/**/*",
+    "node_modules/**/*",
     "vitest.config.ts",
   ],
 }

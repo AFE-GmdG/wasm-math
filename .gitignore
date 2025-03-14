@@ -7,6 +7,9 @@ dist
 # wasm binaries in src
 src/wasm/*.wasm
 
+# unit test reports
+.github/reports
+
 # misc
 yarn-debug.log*
 yarn-error.log*

@@ -20,16 +20,22 @@
     "buildwasm": "wat2wasm src/wat/math.wat -o src/wasm/math.wasm",
     "pretest": "yarn build",
     "test": "vitest --run",
+    "lint": "eslint",
     "rr": "rimraf dist node_modules yarn.lock"
   },
   "dependencies": {},
   "devDependencies": {
     "@rollup/plugin-terser": "0.4.4",
     "@rollup/plugin-wasm": "6.2.2",
+    "@stylistic/eslint-plugin-ts": "4.2.0",
+    "@types/node": "22.13.10",
+    "@typescript-eslint/eslint-plugin": "8.26.1",
+    "@typescript-eslint/parser": "8.26.1",
+    "eslint": "9.22.0",
+    "eslint-plugin-import": "2.31.0",
     "rimraf": "6.0.1",
     "rollup": "4.35.0",
     "rollup-plugin-typescript2": "0.36.0",
-    "ts-loader": "9.5.2",
     "tslib": "2.8.1",
     "typescript": "5.8.2",
     "vitest": "3.0.8"

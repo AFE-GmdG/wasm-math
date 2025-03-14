@@ -1,19 +1,5 @@
 import { test, expect } from "vitest";
-import { Matrix4, Matrix4Data } from "./math";
-
-// define some usefule matrices
-const identity: Matrix4Data = [
-  1, 0, 0, 0,
-  0, 1, 0, 0,
-  0, 0, 1, 0,
-  0, 0, 0, 1,
-];
-const zero: Matrix4Data = [
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-  0, 0, 0, 0,
-];
+import { Matrix4 } from "./math";
 
 // Matrix4 ctor() overloads:
 // constructor();

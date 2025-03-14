@@ -1,5 +1,9 @@
+.github/
 .vscode/
 src/
 test/
+eslint.config.js
 rollup.config.js
+tsconfig.eslint.json
+tsconfig.json
 vitest.config.ts
