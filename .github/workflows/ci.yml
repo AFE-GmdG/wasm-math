@@ -49,3 +49,10 @@ jobs:
 
     - name: test
       run: yarn test
+
+    - name: Publish Rest Result
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: |
+          .github\reports\junit.xml
