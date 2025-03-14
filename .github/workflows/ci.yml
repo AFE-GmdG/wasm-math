@@ -24,15 +24,19 @@ jobs:
     - name: install wabt
       run: sudo apt-get install wabt
 
-    # - uses: actions/checkout@v4
-    #   with:
-    #     lfs: false
-    #     submodules: false
+    - uses: actions/checkout@v4
+      with:
+        lfs: false
+        submodules: false
 
-    # - name: Use Node.js ${{ matrix.node-version }}
-    #   uses: actions/setup-node@v4
-    #   with:
-    #     node-version: ${{ matrix.node-version }}
-    #     cache: 'yarn'
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
 
-    # - run: npm buildwasm
+    - name: install dependencies
+      run: yarn
+
+    - name: build wasm
+      run: yarn buildwasm
