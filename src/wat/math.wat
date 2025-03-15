@@ -191,6 +191,16 @@
     v128.store                  ;; S -
   )
 
+  (func $vScaleVector (export "vScaleVector") (type $offsetX3) (param $offsetA i32) (param $offsetB i32) (param $offsetResult i32)
+    local.get $offsetResult ;; S offsetResult
+    local.get $offsetA      ;; S offsetResult, offsetA
+    v128.load               ;; S offsetResult, A
+    local.get $offsetB      ;; S offsetResult, A, offsetB
+    v128.load               ;; S offsetResult, A, B
+    f32x4.mul               ;; S offsetResult, Result
+    v128.store              ;; S -
+  )
+
   (func $mCreateRotQuat (export "mCreateRotQuat") (type $offsetX2) (param $offsetQuat i32) (param $offsetResult i32)
     ;; Create a rotation matrix from a quaternion.
     ;; This method reads the quaternion and uses the function $mCreateRotQuatData to create the matrix.

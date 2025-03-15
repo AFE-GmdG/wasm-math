@@ -8,7 +8,7 @@ test.each<VecX3>([
 ])("Vector3-Cross: $v1 cross $v2 = $result", ({ v1, v2, result }) => {
   using vec1 = new Vector3(v1);
   using vec2 = new Vector3(v2);
-  using resultVec = new Vector3(true);
+  using resultVec = new Vector3();
 
   Vector3.cross(vec1, vec2, resultVec);
 

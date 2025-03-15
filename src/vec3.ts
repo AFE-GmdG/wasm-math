@@ -8,6 +8,7 @@ import {
   vLength,
   vLengthSquared,
   vNormalize,
+  vScaleVector,
 } from "./math";
 
 // Array of Vector3 instances. The index * 16 is the offset in the memory.
@@ -29,51 +30,48 @@ export class Vector3 implements Disposable {
   #isTemporary: boolean;
 
   constructor();
-  constructor([x, y, z]: Vector3Data);
   constructor(tmp: boolean);
-  constructor(vecOrTmp?: Vector3Data | boolean) {
-    if (typeof vecOrTmp === "boolean") {
-      this.#isTemporary = vecOrTmp;
-      if (this.#isTemporary) {
-        if (firstFreeTemporaryOffset < firstFreePermanentOffset) {
-          throw new Error("Vector3: out of memory!");
-        }
-        this.#index = firstFreeTemporaryOffset;
-        this.#offset = this.#index << 4;
-        this.#view = new Float32Array(memory.buffer, this.#offset, 3);
-        this.#view.fill(0);
-        privateOffsetArray[this.#index] = this;
+  constructor(v: Vector3Data);
+  constructor(v: Vector3Data, tmp: boolean);
+  constructor(other: Vector3);
+  constructor(other: Vector3, tmp: boolean);
+  constructor(arg1?: Vector3Data | Vector3 | boolean, arg2?: boolean) {
+    let data: Vector3Data = [0, 0, 0];
+    this.#isTemporary = false;
+    if (arg1 === undefined) {
+      // default constructor
+      this.#isTemporary = true;
+    } else if (arg1 instanceof Vector3) {
+      data = arg1.get();
+      this.#isTemporary = arg2 ?? arg1.#isTemporary;
+    } else if (typeof arg1 === "boolean") {
+      this.#isTemporary = arg1;
+    } else {
+      data = arg1;
+      this.#isTemporary = arg2 ?? false;
+    }
+
+    if (this.#isTemporary) {
+      if (firstFreeTemporaryOffset < firstFreePermanentOffset) {
+        throw new Error("Vector3: Out of memory!");
+      }
+      this.#index = firstFreeTemporaryOffset;
+      this.#offset = (this.#index << 4);
+      this.#view = new Float32Array(memory.buffer, this.#offset, 3);
+      this.#view.set(data);
+      privateOffsetArray[this.#index] = this;
+      firstFreeTemporaryOffset--;
+      while (privateOffsetArray[firstFreeTemporaryOffset] !== null && firstFreeTemporaryOffset >= firstFreePermanentOffset) {
         firstFreeTemporaryOffset--;
-        while (privateOffsetArray[firstFreeTemporaryOffset] !== null && firstFreeTemporaryOffset >= firstFreePermanentOffset) {
-          firstFreeTemporaryOffset--;
-        }
-      } else {
-        if (firstFreePermanentOffset > firstFreeTemporaryOffset) {
-          throw new Error("Vector3: out of memory!");
-        }
-        this.#index = firstFreePermanentOffset;
-        this.#offset = this.#index << 4;
-        this.#view = new Float32Array(memory.buffer, this.#offset, 3);
-        this.#view.fill(0);
-        privateOffsetArray[this.#index] = this;
-        firstFreePermanentOffset++;
-        while (privateOffsetArray[firstFreePermanentOffset] !== null && firstFreePermanentOffset <= firstFreeTemporaryOffset) {
-          firstFreePermanentOffset++;
-        }
       }
     } else {
       if (firstFreePermanentOffset > firstFreeTemporaryOffset) {
-        throw new Error("Vector3: out of memory!");
+        throw new Error("Vector3: Out of memory!");
       }
-      this.#isTemporary = false;
       this.#index = firstFreePermanentOffset;
-      this.#offset = this.#index << 4;
+      this.#offset = (this.#index << 4);
       this.#view = new Float32Array(memory.buffer, this.#offset, 3);
-      if (vecOrTmp) {
-        this.#view.set(vecOrTmp);
-      } else {
-        this.#view.fill(0);
-      }
+      this.#view.set(data);
       privateOffsetArray[this.#index] = this;
       firstFreePermanentOffset++;
       while (privateOffsetArray[firstFreePermanentOffset] !== null && firstFreePermanentOffset <= firstFreeTemporaryOffset) {
@@ -304,6 +302,30 @@ export class Vector3 implements Disposable {
     result[0] = x * invLength;
     result[1] = y * invLength;
     result[2] = z * invLength;
+    return result;
+  }
+
+  // Scale
+  static scale(vector: Vector3, scalar: number, result: Vector3): Vector3;
+  static scale(vectorA: Vector3, vectorB: Vector3, result: Vector3): Vector3;
+  static scale(vectorA: Vector3, vectorB: Vector3 | number, result: Vector3 = new Vector3()): Vector3 {
+    if (typeof vectorB === "number") {
+      result.set([vectorB, vectorB, vectorB]);
+      vScaleVector(vectorA.#offset, result.#offset, result.#offset);
+    } else {
+      vScaleVector(vectorA.#offset, vectorB.#offset, result.#offset);
+    }
+    return result;
+  }
+
+  static scale_ts(vector: Vector3Data, scalar: number, result?: Vector3Data): Vector3Data;
+  static scale_ts(vectorA: Vector3Data, vectorB: Vector3Data, result?: Vector3Data): Vector3Data;
+  static scale_ts(vectorA: Vector3Data, vectorB: Vector3Data | number, result: Vector3Data = [0, 0, 0]): Vector3Data {
+    const [xA, yA, zA] = vectorA;
+    const [xB, yB, zB] = typeof vectorB === "number" ? [vectorB, vectorB, vectorB] : vectorB;
+    result[0] = xA * xB;
+    result[1] = yA * yB;
+    result[2] = zA * zB;
     return result;
   }
 }

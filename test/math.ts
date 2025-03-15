@@ -16,6 +16,12 @@ export type VecX1RNumber = {
   result: number;
 };
 
+export type VecX1NumberVec = {
+  v: Vector3Data;
+  n: number;
+  result: Vector3Data;
+};
+
 export type VecX1MatX1 = {
   v: Vector3Data;
   m: Matrix4Data;

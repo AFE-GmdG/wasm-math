@@ -46,7 +46,7 @@ function main() {
     // Create an additional vector for temporary storage
     // This is a hint. For more information, see
     // `Memory management insights and challenges` below.
-    using result = new Vector3(true); // true: temporary
+    using result = new Vector3(); // temporary
 
     // Calculate the cross product of v1 and v2
     Vector3.cross(v1, v2, result);

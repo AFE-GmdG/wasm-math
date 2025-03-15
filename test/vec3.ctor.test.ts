@@ -29,8 +29,8 @@ test("Vector3 default ctor", () => {
 
       const statistics2 = Vector3.getStatistics();
       expect(statistics2.freeSlots).toBe(4095);
-      expect(statistics2.firstFreePermanentOffset).toBe(1);
-      expect(statistics2.firstFreeTemporaryOffset).toBe(4095);
+      expect(statistics2.firstFreePermanentOffset).toBe(0);
+      expect(statistics2.firstFreeTemporaryOffset).toBe(4094);
     },
   ).not.toThrow();
 
@@ -133,8 +133,8 @@ test("Vector3 Out of Memory", () => {
 
       const statistics2 = Vector3.getStatistics();
       expect(statistics2.freeSlots).toBe(0);
-      expect(statistics2.firstFreePermanentOffset).toBe(4096);
-      expect(statistics2.firstFreeTemporaryOffset).toBe(4095);
+      expect(statistics2.firstFreePermanentOffset).toBe(0);
+      expect(statistics2.firstFreeTemporaryOffset).toBe(-1);
 
       // try to create one more
       expect(

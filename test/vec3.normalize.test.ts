@@ -14,7 +14,7 @@ test.each<VecX2>([
   { v: [0.2, -1.1, -0.9], result: [0.13935, -0.76641, -0.6271] },
 ])("Vector3-Normalization: normalize($v) = $result", ({ v, result }) => {
   using vec = new Vector3(v);
-  using resultVec = new Vector3(true);
+  using resultVec = new Vector3();
 
   Vector3.normalize(vec, resultVec);
 

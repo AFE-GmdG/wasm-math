@@ -14,7 +14,6 @@ export const {
   vLength,
   vLengthSquared,
   vNormalize,
-  vScaleScalar,
   vScaleVector,
   vAngle,
   vLerp,

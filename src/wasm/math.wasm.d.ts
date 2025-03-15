@@ -59,15 +59,6 @@ interface MathWasm {
   vNormalize(offset: number, offsetResult: number): void;
 
   /**
-   * Scales a vector by a scalar.
-   *
-   * @param offset MemoryOffset of the vector.
-   * @param scalar Scalar value.
-   * @param offsetResult MemoryOffset of the result vector.
-   */
-  vScaleScalar(offset: number, scalar: number, offsetResult: number): void;
-
-  /**
    * Scales a vector by another vector.
    *
    * @param offset MemoryOffset of the vector.
