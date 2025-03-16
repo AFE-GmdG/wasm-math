@@ -106,6 +106,9 @@ export class Quaternion implements Disposable {
     }
   }
 
+  /**
+   * Disposes the quaternion instance.
+   */
   [Symbol.dispose]() {
     if (this.#isTemporary) {
       privateOffsetArray[this.#index] = null;
@@ -128,10 +131,27 @@ export class Quaternion implements Disposable {
   static getStatistics() {
     // count free slots
     const freeSlots = privateOffsetArray.filter((v) => v === null).length;
+    // count occupied slots
+    const occupiedSlots = privateOffsetArray.filter((v) => v !== null).length;
+    // count permanent occupied slots
+    const permanentOccupiedSlots = privateOffsetArray.slice(0, firstFreePermanentOffset).filter((v) => v !== null).length;
+    // count temporary occupied slots
+    const temporaryOccupiedSlots = privateOffsetArray.slice(firstFreeTemporaryOffset + 1).filter((v) => v !== null).length;
+    // Test, if there are free permanent slots before the first free permanent slot
+    // This should always be false.
+    const hasInvalidPermanentSlots = privateOffsetArray.slice(0, firstFreePermanentOffset).some((v) => v === null);
+    // Test, if there are free temporary slots after the first free temporary slot
+    // This should always be false.
+    const hasInvalidTemporarySlots = privateOffsetArray.slice(firstFreeTemporaryOffset + 1).some((v) => v === null);
     return {
       freeSlots,
+      occupiedSlots,
+      permanentOccupiedSlots,
+      temporaryOccupiedSlots,
       firstFreePermanentOffset,
       firstFreeTemporaryOffset,
+      hasInvalidPermanentSlots,
+      hasInvalidTemporarySlots,
     };
   }
 
@@ -175,10 +195,22 @@ export class Quaternion implements Disposable {
     }
   }
 
+  /**
+   * Pretty-prints the quaternion to the console.
+   *
+   * @param name The name of the quaternion. If empty, only "Quaternion" will be printed.
+   *             If provided, it will be prefixed to "Quaternion".
+   * @param precision The number of decimal places to print. Default is 3.
+   *
+   * @example
+   * const q = new Quaternion([0.232229, -0.579435, 0.763634, 0.164888]);
+   * q.print("Test"); // Output: "Test Quaternion (0.232, -0.579, 0.764, 0.165)"
+   * q.print("", 2);  // Output: "Quaternion (0.23, -0.58, 0.76, 0.16)"
+   * q.print();       // Output: "Quaternion (0.232, -0.579, 0.764, 0.165)"
+   */
   print(
     name: string = "",
     precision: number = 3,
-    asColumnMajor: boolean = false,
   ) {
     const [x, y, z, w] = this.get();
 
@@ -194,20 +226,9 @@ export class Quaternion implements Disposable {
       sw.length,
     );
 
-    if (asColumnMajor) {
-      console.log(
-        `${name.trim().length ? `${name} ` : ""}Quaternion (\n` +
-        `  ${sx.padStart(maxLength)}\n` +
-        `  ${sy.padStart(maxLength)}\n` +
-        `  ${sz.padStart(maxLength)}\n` +
-        `  ${sw.padStart(maxLength)}\n` +
-        ")",
-      );
-    } else {
-      console.log(
-        // eslint-disable-next-line max-len
-        `${name.trim().length ? `${name} ` : ""}Quaternion (${sx.padStart(maxLength)}, ${sy.padStart(maxLength)}, ${sz.padStart(maxLength)}, ${sw.padStart(maxLength)})`,
-      );
-    }
+    console.log(
+      // eslint-disable-next-line max-len
+      `${name.trim().length ? `${name} ` : ""}Quaternion (${sx.padStart(maxLength)}, ${sy.padStart(maxLength)}, ${sz.padStart(maxLength)}, ${sw.padStart(maxLength)})`,
+    );
   }
 }

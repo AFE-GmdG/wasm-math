@@ -29,11 +29,46 @@ export class Vector3 implements Disposable {
   #offset: number;
   #isTemporary: boolean;
 
+  /**
+   * Creates a new vector instance.
+   * Without arguments, the instance is temporary and initialized with the zero vector.
+   */
   constructor();
+  /**
+   * Creates a new vector instance.
+   * The instance will be temporary if tmp is true, otherwise permanent.
+   * The instance will be initialized with the zero vector.
+   * @param tmp Whether the instance is temporary or not.
+   */
   constructor(tmp: boolean);
+  /**
+   * Creates a new vector instance.
+   * The instance will be permenent initialized to the data.
+   * @param v The vector data.
+   */
   constructor(v: Vector3Data);
+  /**
+   * Creates a new vector instance.
+   * The instance will be temporary if tmp is true, otherwise permanent.
+   * The instance will be initialized to the data.
+   * @param v The vector data.
+   * @param tmp Whether the instance is temporary or not.
+   */
   constructor(v: Vector3Data, tmp: boolean);
+  /**
+   * Creates a new copy of the other Vector3 instance.
+   * The instance will be temporary or permanent depending on the other instance.
+   * The instance will be initialized to the data of the other instance.
+   * @param other The vector instance to copy.
+   */
   constructor(other: Vector3);
+  /**
+   * Creates a new copy of the other Vector3 instance.
+   * The instance will be temporary if tmp is true, otherwise permanent.
+   * The instance will be initialized to the data of the other instance.
+   * @param other The vector instance to copy.
+   * @param tmp Whether the instance is temporary or not.
+   */
   constructor(other: Vector3, tmp: boolean);
   constructor(arg1?: Vector3Data | Vector3 | boolean, arg2?: boolean) {
     let data: Vector3Data = [0, 0, 0];
@@ -80,6 +115,9 @@ export class Vector3 implements Disposable {
     }
   }
 
+  /**
+   * Disposes the vector instance.
+   */
   [Symbol.dispose]() {
     if (this.#isTemporary) {
       privateOffsetArray[this.#index] = null;
@@ -102,8 +140,25 @@ export class Vector3 implements Disposable {
   static getStatistics() {
     // count the free slots
     const freeSlots = privateOffsetArray.filter((v) => v === null).length;
+    // count occupied slots
+    const occupiedSlots = privateOffsetArray.filter((v) => v !== null).length;
+    // count permanent occupied slots
+    const permanentOccupiedSlots = privateOffsetArray.slice(0, firstFreePermanentOffset).filter((v) => v !== null).length;
+    // count temporary occupied slots
+    const temporaryOccupiedSlots = privateOffsetArray.slice(firstFreeTemporaryOffset + 1).filter((v) => v !== null).length;
+    // Test, if there are free permanent slots before the first free permanent slot
+    // This should always be false.
+    const hasInvalidPermanentSlots = privateOffsetArray.slice(0, firstFreePermanentOffset).some((v) => v === null);
+    // Test, if there are free temporary slots after the first free temporary slot
+    // This should always be false.
+    const hasInvalidTemporarySlots = privateOffsetArray.slice(firstFreeTemporaryOffset + 1).some((v) => v === null);
     return {
       freeSlots,
+      occupiedSlots,
+      permanentOccupiedSlots,
+      temporaryOccupiedSlots,
+      hasInvalidPermanentSlots,
+      hasInvalidTemporarySlots,
       firstFreePermanentOffset,
       firstFreeTemporaryOffset,
     };
@@ -148,9 +203,9 @@ export class Vector3 implements Disposable {
    * Adds two vectors.
    * @param a The first vector.
    * @param b The second vector.
-   * @param result The result vector.
+   * @param result (Optional) The result vector.
    */
-  static add(a: Vector3, b: Vector3, result: Vector3): Vector3 {
+  static add(a: Vector3, b: Vector3, result = new Vector3): Vector3 {
     vAdd(a.#offset, b.#offset, result.#offset);
     return result;
   }
@@ -159,7 +214,7 @@ export class Vector3 implements Disposable {
    * Adds two vectors. (TypeScript version)
    * @param a The first vector.
    * @param b The second vector.
-   * @param result The result vector.
+   * @param result (Optional) The result vector.
    */
   static add_ts(a: Vector3Data, b: Vector3Data, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [ax, ay, az] = a;
@@ -174,9 +229,9 @@ export class Vector3 implements Disposable {
    * Subtracts two vectors.
    * @param a The first vector.
    * @param b The second vector.
-   * @param result The result vector.
+   * @param result (Optional) The result vector.
    */
-  static sub(a: Vector3, b: Vector3, result: Vector3): Vector3 {
+  static sub(a: Vector3, b: Vector3, result = new Vector3()): Vector3 {
     vSub(a.#offset, b.#offset, result.#offset);
     return result;
   }
@@ -185,7 +240,7 @@ export class Vector3 implements Disposable {
    * Subtracts two vectors. (TypeScript version)
    * @param a The first vector.
    * @param b The second vector.
-   * @param result The result vector.
+   * @param result (Optional) The result vector.
    */
   static sub_ts(a: Vector3Data, b: Vector3Data, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [ax, ay, az] = a;
@@ -200,9 +255,9 @@ export class Vector3 implements Disposable {
    * Calculates the cross product of two vectors.
    * @param a The first vector.
    * @param b The second vector.
-   * @param result The result vector.
+   * @param result (Optional) The result vector.
    */
-  static cross(a: Vector3, b: Vector3, result: Vector3): Vector3 {
+  static cross(a: Vector3, b: Vector3, result = new Vector3()): Vector3 {
     vCross(a.#offset, b.#offset, result.#offset);
     return result;
   }
@@ -211,7 +266,7 @@ export class Vector3 implements Disposable {
    * Calculates the cross product of two vectors. (TypeScript version)
    * @param a The first vector.
    * @param b The second vector.
-   * @param result The result vector.
+   * @param result (Optional) The result vector.
    */
   static cross_ts(a: Vector3Data, b: Vector3Data, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [ax, ay, az] = a;
@@ -251,6 +306,8 @@ export class Vector3 implements Disposable {
 
   /**
    * Calculates the length of the vector. (TypeScript version)
+   *
+   * @param vector The vector to calculate the length of.
    */
   static length_ts(vector: Vector3Data): number {
     const [x, y, z] = vector;
@@ -266,6 +323,8 @@ export class Vector3 implements Disposable {
 
   /**
    * Calculates the squared length of the vector. (TypeScript version)
+   *
+   * @param vector The vector to calculate the squared length of.
    */
   static lengthSquared_ts(vector: Vector3Data): number {
     const [x, y, z] = vector;
@@ -274,14 +333,20 @@ export class Vector3 implements Disposable {
 
   /**
    * Normalizes the vector.
+   *
+   * @param vector The vector to normalize.
+   * @param result (Optional) The result vector.
    */
-  static normalize(vector: Vector3, result: Vector3): Vector3 {
+  static normalize(vector: Vector3, result = new Vector3()): Vector3 {
     vNormalize(vector.#offset, result.#offset);
     return result;
   }
 
   /**
    * Normalizes the vector. (TypeScript version)
+   *
+   * @param vector The vector to normalize.
+   * @param result (Optional) The result vector.
    */
   static normalize_ts(vector: Vector3Data, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [x, y, z] = vector;
@@ -305,9 +370,22 @@ export class Vector3 implements Disposable {
     return result;
   }
 
-  // Scale
-  static scale(vector: Vector3, scalar: number, result: Vector3): Vector3;
-  static scale(vectorA: Vector3, vectorB: Vector3, result: Vector3): Vector3;
+  /**
+   * Scale a vector by a scalar.
+   *
+   * @param vector The vector to scale.
+   * @param scalar The scalar to scale the vector with.
+   * @param result (Optional) The result vector.
+   */
+  static scale(vector: Vector3, scalar: number, result?: Vector3): Vector3;
+  /**
+   * Scale a vector by another vector.
+   *
+   * @param vectorA The vector to scale.
+   * @param vectorB The vector to scale vector A with.
+   * @param result (Optional) The result vector.
+   */
+  static scale(vectorA: Vector3, vectorB: Vector3, result?: Vector3): Vector3;
   static scale(vectorA: Vector3, vectorB: Vector3 | number, result: Vector3 = new Vector3()): Vector3 {
     if (typeof vectorB === "number") {
       result.set([vectorB, vectorB, vectorB]);
@@ -318,7 +396,21 @@ export class Vector3 implements Disposable {
     return result;
   }
 
+  /**
+   * Scale a vector by a scalar.
+   *
+   * @param vector The vector to scale.
+   * @param scalar The scalar to scale the vector with.
+   * @param result (Optional) The result vector.
+   */
   static scale_ts(vector: Vector3Data, scalar: number, result?: Vector3Data): Vector3Data;
+  /**
+   * Scale a vector by another vector.
+   *
+   * @param vectorA The vector to scale.
+   * @param vectorB The vector to scale vector A with.
+   * @param result (Optional) The result vector.
+   */
   static scale_ts(vectorA: Vector3Data, vectorB: Vector3Data, result?: Vector3Data): Vector3Data;
   static scale_ts(vectorA: Vector3Data, vectorB: Vector3Data | number, result: Vector3Data = [0, 0, 0]): Vector3Data {
     const [xA, yA, zA] = vectorA;
@@ -327,5 +419,39 @@ export class Vector3 implements Disposable {
     result[1] = yA * yB;
     result[2] = zA * zB;
     return result;
+  }
+
+  /**
+   * Pretty-prints the vector to the console.
+   *
+   * @param name The name of the vector. If empty, only "Vector3" will be printed.
+   *             If provided, it will be prefixed to "Vector3".
+   * @param precision The number of decimal places to print. Default is 3.
+   *
+   * @example
+   * const vec = new Vector3([1.23456, 7.89012, 3.45678]);
+   * vec.print("Test"); // Output: "Test Vector3 (1.235, 7.890, 3.457)"
+   * vec.print("", 2);  // Output: "Vector3 (1.23, 7.89, 3.46)"
+   * vec.print();       // Output: "Vector3 (1.235, 7.890, 3.457)"
+   */
+  print(
+    name: string = "",
+    precision: number = 3,
+  ) {
+    const [x, y, z] = this.get();
+
+    const sx = x.toFixed(precision);
+    const sy = y.toFixed(precision);
+    const sz = z.toFixed(precision);
+
+    const maxLength = Math.max(
+      sx.length,
+      sy.length,
+      sz.length,
+    );
+
+    console.log(
+      `${name.trim().length ? `${name} ` : ""}Vector3 (${sx.padStart(maxLength)}, ${sy.padStart(maxLength)}, ${sz.padStart(maxLength)})`,
+    );
   }
 }

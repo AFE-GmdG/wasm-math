@@ -52,6 +52,7 @@ export class Matrix4 implements Disposable {
    * The instance will be temporary if tmp is true, otherwise permanent.
    * The instance will be initialized with the data.
    * @param m The matrix data.
+   * @param tmp Whether the instance is temporary or not.
    */
   constructor(m: Matrix4Data, tmp: boolean);
   /**
@@ -66,7 +67,7 @@ export class Matrix4 implements Disposable {
    * The instance will be temporary if tmp is true, otherwise permanent.
    * The instance will be initialized to the data of the other instance.
    * @param other The Matrix4 instance to copy.
-   * @param tmp true if the instance should be temporary, false if permanent.
+   * @param tmp Whether the instance is temporary or not.
    */
   constructor(other: Matrix4, tmp: boolean);
   constructor(arg1?: Matrix4Data | Matrix4 | boolean, arg2?: boolean) {
@@ -264,93 +265,142 @@ export class Matrix4 implements Disposable {
     }
   }
 
-  static createTranslation(translation: Vector3): Matrix4;
-  static createTranslation(translation: Vector3, dst: Matrix4): Matrix4;
-  static createTranslation(translation: Vector3Data): Matrix4;
-  static createTranslation(translation: Vector3Data, dst: Matrix4): Matrix4;
-  static createTranslation(translation: Vector3 | Vector3Data, dst = new Matrix4()): Matrix4 {
+  /**
+   * Creates a new Matrix4 which is translated by the given vector.
+   * (TypeScript only version: This method wouldn't be faster with WASM)
+   *
+   * @param translation The translation vector.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createTranslation(translation: Vector3, result?: Matrix4): Matrix4;
+  /**
+   * Creates a new Matrix4 which is translated by the given vector.
+   * (TypeScript only version: This method wouldn't be faster with WASM)
+   *
+   * @param translation The translation vector.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createTranslation(translation: Vector3Data, result?: Matrix4): Matrix4;
+  static createTranslation(translation: Vector3 | Vector3Data, result = new Matrix4()): Matrix4 {
     const [tx, ty, tz] = translation instanceof Vector3
       ? translation.get()
       : translation;
 
-    dst.set([
+    result.set([
       1, 0, 0, 0,
       0, 1, 0, 0,
       0, 0, 1, 0,
       tx, ty, tz, 1,
     ]);
 
-    return dst;
+    return result;
   }
 
-  static createRotationX(radians: number): Matrix4;
-  static createRotationX(radians: number, dst: Matrix4): Matrix4;
-  static createRotationX(radians: number, dst = new Matrix4()): Matrix4 {
+  /**
+   * Creates a new Matrix4 which is rotated around the x-axis by the given angle.
+   * (TypeScript only version: This method wouldn't be faster with WASM)
+   *
+   * @param radians The rotation angle in radians.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createRotationX(radians: number, result = new Matrix4()): Matrix4 {
     const c = Math.cos(radians);
     const s = Math.sin(radians);
 
-    dst.set([
+    result.set([
       1, 0, 0, 0,
       0, c, s, 0,
       0, -s, c, 0,
       0, 0, 0, 1,
     ]);
 
-    return dst;
+    return result;
   }
 
-  static createRotationY(radians: number): Matrix4;
-  static createRotationY(radians: number, dst: Matrix4): Matrix4;
-  static createRotationY(radians: number, dst = new Matrix4()): Matrix4 {
+  /**
+   * Creates a new Matrix4 which is rotated around the y-axis by the given angle.
+   * (TypeScript only version: This method wouldn't be faster with WASM)
+   *
+   * @param radians The rotation angle in radians.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createRotationY(radians: number, result = new Matrix4()): Matrix4 {
     const c = Math.cos(radians);
     const s = Math.sin(radians);
 
-    dst.set([
+    result.set([
       c, 0, -s, 0,
       0, 1, 0, 0,
       s, 0, c, 0,
       0, 0, 0, 1,
     ]);
 
-    return dst;
+    return result;
   }
 
-  static createRotationZ(radians: number): Matrix4;
-  static createRotationZ(radians: number, dst: Matrix4): Matrix4;
-  static createRotationZ(radians: number, dst = new Matrix4()): Matrix4 {
+  /**
+   * Creates a new Matrix4 which is rotated around the z-axis by the given angle.
+   * (TypeScript only version: This method wouldn't be faster with WASM)
+   *
+   * @param radians The rotation angle in radians.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createRotationZ(radians: number, result = new Matrix4()): Matrix4 {
     const c = Math.cos(radians);
     const s = Math.sin(radians);
 
-    dst.set([
+    result.set([
       c, s, 0, 0,
       -s, c, 0, 0,
       0, 0, 1, 0,
       0, 0, 0, 1,
     ]);
 
-    return dst;
+    return result;
   }
 
-  static createRotation(quaternion: Quaternion): Matrix4;
-  static createRotation(quaternion: Quaternion, dst: Matrix4): Matrix4;
-  static createRotation(quaternion: QuaternionData): Matrix4;
-  static createRotation(quaternion: QuaternionData, dst: Matrix4): Matrix4;
-  static createRotation(quaternion: Quaternion | QuaternionData, dst = new Matrix4()): Matrix4 {
+  /**
+   * Creates a new Matrix4 which is rotated by the given quaternion.
+   *
+   * @param quaternion The quaternion to create the rotation matrix from.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createRotation(quaternion: Quaternion, result?: Matrix4): Matrix4;
+  /**
+   * Creates a new Matrix4 which is rotated by the given quaternion.
+   *
+   * @param quaternion The quaternion to create the rotation matrix from.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createRotation(quaternion: QuaternionData, result?: Matrix4): Matrix4;
+  static createRotation(quaternion: Quaternion | QuaternionData, result = new Matrix4()): Matrix4 {
     if (quaternion instanceof Quaternion) {
-      mCreateRotQuat(quaternion.offset, dst.#offset);
+      mCreateRotQuat(quaternion.offset, result.#offset);
     } else {
       const [x, y, z, w] = quaternion;
-      mCreateRotQuatData(x, y, z, w, dst.#offset);
+      mCreateRotQuatData(x, y, z, w, result.#offset);
     }
 
-    return dst;
+    return result;
   }
 
-  static createRotation_ts(quaternion: Quaternion): Matrix4;
-  static createRotation_ts(quaternion: Quaternion, dst: Matrix4): Matrix4;
-  static createRotation_ts(quaternion: QuaternionData): Matrix4;
-  static createRotation_ts(quaternion: QuaternionData, dst: Matrix4): Matrix4;
-  static createRotation_ts(quaternion: Quaternion | QuaternionData, dst = new Matrix4()): Matrix4 {
+  /**
+   * Creates a new Matrix4 which is rotated by the given quaternion.
+   * (TypeScript version)
+   *
+   * @param quaternion The quaternion to create the rotation matrix from.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createRotation_ts(quaternion: Quaternion, result?: Matrix4): Matrix4;
+  /**
+   * Creates a new Matrix4 which is rotated by the given quaternion.
+   * (TypeScript version)
+   *
+   * @param quaternion The quaternion to create the rotation matrix from.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createRotation_ts(quaternion: QuaternionData, result?: Matrix4): Matrix4;
+  static createRotation_ts(quaternion: Quaternion | QuaternionData, result = new Matrix4()): Matrix4 {
     const [x, y, z, w] = quaternion instanceof Quaternion
       ? quaternion.get()
       : quaternion;
@@ -360,16 +410,25 @@ export class Matrix4 implements Disposable {
     const yy = y * y2; const yz = y * z2; const zz = z * z2;
     const wx = w * x2; const wy = w * y2; const wz = w * z2;
 
-    dst.set([
+    result.set([
       1 - (yy + zz), xy + wz, xz - wy, 0,
       xy - wz, 1 - (xx + zz), yz + wx, 0,
       xz + wy, yz - wx, 1 - (xx + yy), 0,
       0, 0, 0, 1,
     ]);
 
-    return dst;
+    return result;
   }
 
+  /**
+   * Pretty-prints the matrix to the console.
+   *
+   * @param name The name of the matrix. If empty, only "Matrix 4x4" will be printed.
+   *             If provided, it will be prefixed to "Matrix 4x4".
+   * @param precision The number of decimal places to print. Default is 3.
+   * @param asColumnMajor If true, prints the matrix in column-major order. Default is false (row-major order).
+   *                      "(Column Major) or "(Row Major)" will be appended to the name.
+   */
   print(
     name: string = "",
     precision: number = 3,
