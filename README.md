@@ -1,3 +1,7 @@
+[![Node.js CI](https://github.com/AFE-GmdG/wasm-math/workflows/Node.js%20CI/badge.svg)](https://github.com/AFE-GmdG/wasm-math/actions?query=workflow:"Node.js+CI")
+[![GitHub tag](https://img.shields.io/github/tag/AFE-GmdG/wasm-math?include_prereleases=&sort=semver&color=blue)](https://github.com/AFE-GmdG/wasm-math/releases/)
+[![License](https://img.shields.io/badge/License-MIT-blue)](#license)
+
 # wasm-math - WebAssembly Math Library
 
 `wasm-math` is a powerful library for vector, quaternion, and matrix operations, developed with TypeScript and handwritten WebAssembly (\*.wat). It is specifically optimized for WebGPU-based games and web applications, utilizing the [SIMD (Single Instruction, Multiple Data)](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md) instruction extension of WebAssembly for maximum performance. It's tested against the latest Chrome and Firefox versions.
@@ -151,7 +155,7 @@ An `Emscripten`-compiled C code comparison will be added soon.
 A cross product isn't that complex. However, if the performance gain is already 3x for this simple operation, the gain for more complex operations like matrix-matrix multiplication will be even higher.
 
 ## Memory management insights and challenges
-Tests have shown that if the Vector3, Quaternion, and Matrix4 classes are not written with memory management from the start, any speed advantage gained by using WebAssembly is negated by the necessary marshaling between JavaScript and WebAssembly.
+Tests have shown that if the Vector3, Quaternion, and Matrix4 classes are not written with efficiant memory management in mind from the start, any speed advantage gained by using WebAssembly is negated by the necessary marshaling between JavaScript and WebAssembly.
 
 Therefore each class has a dedicated memory space within the WebAssembly memory. In this configuration there are 6 Pages, each with 64KB. Each part could hold up to 4096 instances of the respective class.
 
@@ -163,6 +167,60 @@ WebAssembly Text: **math.wat**
 ;; Page 2-5: 0x20000 - 0x5FFFF (256 KB): Matrix4 storage
 ```
 Instances meant for long-term storage are placed at the top of the storage space for each class. Temporary instances are placed at the bottom with an additional offset counter. This way, the "free space search" algorithm leads to less fragmentation and faster allocation.
+
+### Disposable instances and the using keyword
+You can create up to 4096 instances of each class. Classes cannot be automatically garbage collected because each JavaScript instance is married to a memory area in the WebAssembly. If you create a new instance, you must also delete it manually. The easiest way to do this, is to use the `using` keyword.
+
+Example:
+```ts
+function calculateSomething() {
+  using v1 = new Vector3(1, 2, 3);
+  using v2 = new Vector3(4, 5, 6);
+  using result = new Vector3(); // provided result instance
+
+  Vector3.cross(v1, v2, result);
+  console.log(result.print());
+}
+```
+All functions, that produce a result of a Vector3, Quaternion, or Matrix4 instance, have an optional parameter for the result. This way you can reuse instances and avoid creating unnecessary temporary ones. But even then, you are responsible for deleting these instances.
+
+Example:
+```ts
+function calculateSomething() {
+  using v1 = new Vector3(1, 2, 3);
+  using v2 = new Vector3(4, 5, 6);
+
+  // An automatically created result instance is used.
+  // This instance still needs to be cleaned up manually.
+  using result = Vector3.cross(v1, v2);
+  console.log(result.print());
+}
+```
+You can't use the `using` keyword, if you want to return the a instance from a function created by the function itself. In this case you can either create a new instance before and pass it to the function or use `const` inside and `using` outside the function.
+
+Example:
+```ts
+function calculateSomething() {
+  using v1 = new Vector3(1, 2, 3);
+  using v2 = new Vector3(4, 5, 6);
+
+  return Vector3.cross(v1, v2);
+}
+
+function main() {
+  using result = calculateSomething();
+  console.log(result.print());
+}
+```
+If you really have to, you can manually call the `Symbol.dispose` method of an instance. However you cannot use the instance afterwards.
+
+Example:
+```ts
+const v1 = new Vector3(1, 2, 3);
+// Do something with v1
+v1[Symbol.dispose]();
+// v1 is now unusable
+```
 
 ## License
 [MIT License](./LICENSE)

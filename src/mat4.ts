@@ -420,6 +420,17 @@ export class Matrix4 implements Disposable {
     return result;
   }
 
+  // TODO: createFromEuler with EulerOrder and a useful default
+  // TODO: createScale
+  // TODO: createInverse
+  // TODO: createOrthographic
+  // TODO: createPerspective
+  // TODO: createLookAt
+
+  // TODO: multiply
+  // TODO: multiplyVector3
+  // TODO: instance methods to translate, rotate, scale and invert the matrix in place
+
   /**
    * Pretty-prints the matrix to the console.
    *
