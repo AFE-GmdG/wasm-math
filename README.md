@@ -10,7 +10,7 @@
 - **Vector Operations**: Support for basic operations such as addition, subtraction, cross and dot product, squared and normal vector length, normalization and more.
 - **Quaternion Operations**: *TODO*
 - **Matrix Operations**: *TODO*
-- **SIMD WebAssembly**: Handwritten SIMD operations for maximum performance. The individual assembly operations are reduced to the absolute minimum to maximize execution speed. Comparisons with `Emscripten` and `C` code showed significantly longer code, more frequent read and write accesses, and thus lower performance.
+- **SIMD WebAssembly**: Handwritten SIMD operations ensure maximum performance. The assembly code is kept to an absolute minimum to optimize execution speed. Comparisons with `Emscripten` and `C` code showed significantly longer code, more frequent read and write accesses, and thus lower performance.
 - **TypeScript**: The library is developed with TypeScript, providing a clean and easy-to-use API as well as type safety.
 
 ## Intended target platforms
@@ -150,18 +150,18 @@ Engine      | Time         | Relative to JS | Relative to WASM
 JavaScript  | 2.89 seconds | 100% | 301%
 WebAssembly | 0.96 seconds |  33% | 100%
 
-An `Emscripten`-compiled C code comparison will be added soon.
+A comparison to an `Emscripten`-compiled C implementation will be added soon.
 
 A cross product isn't that complex. However, if the performance gain is already 3x for this simple operation, the gain for more complex operations like matrix-matrix multiplication will be even higher.
 
 ## Memory management insights and challenges
-Tests have shown that if the Vector3, Quaternion, and Matrix4 classes are not written with efficiant memory management in mind from the start, any speed advantage gained by using WebAssembly is negated by the necessary marshaling between JavaScript and WebAssembly.
+Tests have shown that if the Vector3, Quaternion, and Matrix4 classes are not written with efficient memory management in mind from the start, any speed advantage gained by using WebAssembly is negated by the necessary marshaling between JavaScript and WebAssembly.
 
-Therefore each class has a dedicated memory space within the WebAssembly memory. In this configuration there are 6 Pages, each with 64KB. Each part could hold up to 4096 instances of the respective class.
+Therefore each class has a dedicated memory space within the WebAssembly memory. In this configuration there are 6 pages, each 64 KB in size. Each part could hold up to 4096 instances of the respective class.
 
 WebAssembly Text: **math.wat**
 ```
-(memory (export "memory") 6) ;; 6 pages of 64 KB each. 384 KB total
+(memory (export "memory") 6) ;; 6 pages each 64 KB in size, 384 KB total
 ;; Page   0: 0x00000 - 0x0FFFF  (64 KB): Vector3 storage
 ;; Page   1: 0x10000 - 0x1FFFF  (64 KB): Quaternion storage
 ;; Page 2-5: 0x20000 - 0x5FFFF (256 KB): Matrix4 storage
@@ -169,7 +169,7 @@ WebAssembly Text: **math.wat**
 Instances meant for long-term storage are placed at the top of the storage space for each class. Temporary instances are placed at the bottom with an additional offset counter. This way, the "free space search" algorithm leads to less fragmentation and faster allocation.
 
 ### Disposable instances and the using keyword
-You can create up to 4096 instances of each class. Classes cannot be automatically garbage collected because each JavaScript instance is married to a memory area in the WebAssembly. If you create a new instance, you must also delete it manually. The easiest way to do this, is to use the `using` keyword.
+You can create up to 4096 instances of each class. Classes cannot be automatically garbage collected because each JavaScript instance is married to a memory area in the WebAssembly. If you create a new instance, you must also dispose of it manually. The easiest way to do this, is to use the `using` keyword.
 
 Example:
 ```ts
@@ -196,7 +196,7 @@ function calculateSomething() {
   console.log(result.print());
 }
 ```
-You can't use the `using` keyword, if you want to return the a instance from a function created by the function itself. In this case you can either create a new instance before and pass it to the function or use `const` inside and `using` outside the function.
+You can't use the `using` keyword, if you want to return an instance from a function created inside the function itself. In this case you can either create a new instance before and pass it to the function or use `const` inside and `using` outside the function.
 
 Example:
 ```ts
