@@ -1,9 +1,14 @@
 (module $math
+  (type $importTrig (func (param f32) (result f32)))
   (type $offsetRf32 (func (param i32) (result f32)))
   (type $offsetX2 (func (param i32 i32)))
   (type $offsetX2Rf32 (func (param i32 i32) (result f32)))
   (type $offsetX3 (func (param i32 i32 i32)))
   (type $quatDataOffset (func (param f32 f32 f32 f32 i32)))
+
+  (import "env" "sin" (func $sin (type $importTrig)))
+  (import "env" "cos" (func $cos (type $importTrig)))
+  (import "env" "acos" (func $acos (type $importTrig)))
 
   (memory (export "memory") 6 6) ;; 6 pages of 64 KB each. 384 KB total
   ;; Page   0: 0x00000 - 0x0FFFF  (64 KB): Vector3 storage
@@ -199,6 +204,55 @@
     v128.load               ;; S offsetResult, A, B
     f32x4.mul               ;; S offsetResult, Result
     v128.store              ;; S -
+  )
+
+  (func $vAngle (export "vAngle") (type $offsetX2Rf32) (param $offsetA i32) (param $offsetB i32) (result f32)
+    (local $tmp v128)
+
+    ;; Return 0 if offsetA and offsetB are the same
+    (block $eq1
+      local.get $offsetA      ;; S offsetA
+      local.get $offsetB      ;; S offsetA, offsetB
+      i32.ne                  ;; S offsetA != offsetB
+      br_if $eq1               ;; S -
+      f32.const 0.0           ;; S 0.0
+      return
+    )
+
+    ;; Return 0 if all components of offsetA and offsetB are the same
+    (block $eq2
+      local.get $offsetA      ;; S offsetA
+      v128.load               ;; S A
+      local.get $offsetB      ;; S A, offsetB
+      v128.load               ;; S A, B
+      f32x4.eq                ;; S (A[0] == B[0], A[1] == B[1], A[2] == B[2], A[3] == B[3])
+      i32x4.all_true          ;; S A == B (all components)
+      br_if $eq2              ;; S -
+
+      ;; Assume, each vector is normalized. This may not be the case.
+      ;; Calculate the dot product of the two vectors
+      local.get $offsetA      ;; S offsetA
+      v128.load               ;; S A
+      local.get $offsetB      ;; S A, offsetB
+      v128.load               ;; S A, B
+      f32x4.mul               ;; S (A * B)
+      local.tee $tmp          ;; S (A * B)
+      f32x4.extract_lane 0    ;; S (A * B)[0]
+      local.get $tmp          ;; S (A * B)[0], (A * B)
+      f32x4.extract_lane 1    ;; S (A * B)[0], (A * B)[1]
+      f32.add                 ;; S (A * B)[0] + (A * B)[1]
+      local.get $tmp          ;; S (A * B)[0] + (A * B)[1], (A * B)
+      f32x4.extract_lane 2    ;; S (A * B)[0] + (A * B)[1], (A * B)[2]
+      f32.add                 ;; S dotProduct
+
+      ;; acos(dotProduct) = angle
+      call $acos              ;; S angle
+      return
+    )
+
+    ;; All components are the same
+    ;; Return 0
+    f32.const 0.0
   )
 
   (func $mCreateRotQuat (export "mCreateRotQuat") (type $offsetX2) (param $offsetQuat i32) (param $offsetResult i32)

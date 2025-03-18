@@ -9,6 +9,7 @@ import {
   vLengthSquared,
   vNormalize,
   vScaleVector,
+  vAngle,
 } from "./math";
 
 // Array of Vector3 instances. The index * 16 is the offset in the memory.
@@ -419,6 +420,38 @@ export class Vector3 implements Disposable {
     result[1] = yA * yB;
     result[2] = zA * zB;
     return result;
+  }
+
+  /**
+   * Returns the angle between two vectors in radians.
+   * The vectors should be normalized.
+   *
+   * @param vectorA First vector. Should be normalized.
+   * @param vectorB Second vector. Should be normalized.
+   */
+  static angle(vectorA: Vector3, vectorB: Vector3): number {
+    return vAngle(vectorA.#offset, vectorB.#offset);
+  }
+
+  /**
+   * Returns the angle between two vectors in radians. (TypeScript version)
+   * The vectors should be normalized.
+   *
+   * @param vectorA First vector. Should be normalized.
+   * @param vectorB Second vector. Should be normalized.
+   */
+  static angle_ts(vectorA: Vector3Data, vectorB: Vector3Data): number {
+    if (
+      vectorA[0] === vectorB[0]
+      && vectorA[1] === vectorB[1]
+      && vectorA[2] === vectorB[2]
+    ) {
+      return 0;
+    }
+    const [x1, y1, z1] = vectorA;
+    const [x2, y2, z2] = vectorB;
+    const dotProduct = x1 * x2 + y1 * y2 + z1 * z2;
+    return Math.acos(dotProduct);
   }
 
   /**
