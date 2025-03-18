@@ -7,9 +7,29 @@
 `wasm-math` is a powerful library for vector, quaternion, and matrix operations, developed with TypeScript and handwritten WebAssembly (\*.wat). It is specifically optimized for WebGPU-based games and web applications, utilizing the [SIMD (Single Instruction, Multiple Data)](https://github.com/WebAssembly/simd/blob/master/proposals/simd/SIMD.md) instruction extension of WebAssembly for maximum performance. It's tested against the latest Chrome and Firefox versions.
 
 ## Features
-- **Vector Operations**: Support for basic operations such as addition, subtraction, cross and dot product, squared and normal vector length, normalization and more.
+- **Vector Operations**:
+  - addition and subtraction (WASM & TS)
+  - cross and dot product (WASM & TS)
+  - squared and normal vector length (WASM & TS)
+  - normalization (WASM & TS)
+  - scale (WASM & TS)
+  - angle between two vectors (WASM & TS)
+  - pretty print
 - **Quaternion Operations**: *TODO*
+  - pretty print
 - **Matrix Operations**: *TODO*
+  - createTranslation (TS only, wasm would be slower)
+  - createRotationX, Y and Z (TS only, wasm would be slower)
+  - createRotation (Quaternion) (WASM & TS, wasm is slightly slower becaue of imporing `Math.acos` from JavaScript)
+  - *TODO*: createFromEuler with EulerOrder and a useful default
+  - *TODO*: createScale
+  - *TODO*: createInverse
+  - *TODO*: createOrthographic
+  - *TODO*: createPerspective
+  - *TODO*: createLookAt
+  - multiply (WASM & TS) (WASM is 4.22 times faster)
+  - *TODO*: multiplyVector
+  - pretty print
 - **SIMD WebAssembly**: Handwritten SIMD operations ensure maximum performance. The assembly code is kept to an absolute minimum to optimize execution speed. Comparisons with `Emscripten` and `C` code showed significantly longer code, more frequent read and write accesses, and thus lower performance.
 - **TypeScript**: The library is developed with TypeScript, providing a clean and easy-to-use API as well as type safety.
 
