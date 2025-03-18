@@ -528,4 +528,474 @@
     ;; store the fourth column
     v128.store                    ;; S -
   )
+
+  (func $mMulMat (export "mMulMat") (type $offsetX3) (param $offsetA i32) (param $offsetB i32) (param $offsetResult i32)
+    (local $aCol0 v128)
+    (local $aCol1 v128)
+    (local $aCol2 v128)
+    (local $aCol3 v128)
+    (local $bRow0 v128)
+    (local $bRow1 v128)
+    (local $bRow2 v128)
+    (local $bRow3 v128)
+
+    (local $tmp v128) ;; to store a temporary f32x4
+
+    (local $r0 f32)   ;; to store a the 1st part of a column of the result matrix
+    (local $r1 f32)   ;; to store a the 2nd part of a column of the result matrix
+    (local $r2 f32)   ;; to store a the 3rd part of a column of the result matrix
+    (local $r3 f32)   ;; to store a the 4th part of a column of the result matrix
+
+    ;; Load the offset of the result matrix
+
+    ;; Load the rows of matrix B
+    ;; Since the memoty is stored in column major order, I load the columns of B in the col Variables of A
+    ;; and create the rows of B from it. Then I can load the columns of A in the col variables of A.
+    local.get $offsetB                 ;; S offsetB
+    v128.load                          ;; S B[0]
+    local.set $aCol0                   ;; S -
+    i32.const 16                       ;; S 16
+    local.get $offsetB                 ;; S 16, offsetB
+    i32.add                            ;; S (offsetB + 16)
+    v128.load                          ;; S B[1]
+    local.set $aCol1                   ;; S -
+    i32.const 32                       ;; S 32
+    local.get $offsetB                 ;; S 32, offsetB
+    i32.add                            ;; S (offsetB + 32)
+    v128.load                          ;; S B[2]
+    local.set $aCol2                   ;; S -
+    i32.const 48                       ;; S 48
+    local.get $offsetB                 ;; S 48, offsetB
+    i32.add                            ;; S (offsetB + 48)
+    v128.load                          ;; S B[3]
+    local.set $aCol3                   ;; S -
+
+    ;; Create the rows of B: row1
+    local.get $aCol0                   ;; S B[0]
+    f32x4.extract_lane 1               ;; S B[0][1]
+    f32x4.splat                        ;; S (B[0][1], B[0][1], B[0][1], B[0][1])
+
+    local.get $aCol1                   ;; S (B[0][1], B[0][1], B[0][1], B[0][1]), B[1]
+    f32x4.extract_lane 1               ;; S (B[0][1], B[0][1], B[0][1], B[0][1]), B[1][1]
+    f32x4.replace_lane 1               ;; S (B[0][1], B[1][1], B[0][1], B[0][1])
+
+    local.get $aCol2                   ;; S (B[0][1], B[1][1], B[0][1], B[0][1]), B[2]
+    f32x4.extract_lane 1               ;; S (B[0][1], B[1][1], B[0][1], B[0][1]), B[2][1]
+    f32x4.replace_lane 2               ;; S (B[0][1], B[1][1], B[2][1], B[0][1])
+
+    local.get $aCol3                   ;; S (B[0][1], B[1][1], B[2][1], B[0][1]), B[3]
+    f32x4.extract_lane 1               ;; S (B[0][1], B[1][1], B[2][1], B[0][1]), B[3][1]
+    f32x4.replace_lane 3               ;; S (B[0][1], B[1][1], B[2][1], B[3][1])
+    local.set $bRow1                   ;; S -
+
+    ;; Create the rows of B: row2
+    local.get $aCol0                   ;; S B[0]
+    f32x4.extract_lane 2               ;; S B[0][2]
+    f32x4.splat                        ;; S (B[0][2], B[0][2], B[0][2], B[0][2])
+
+    local.get $aCol1                   ;; S (B[0][2], B[0][2], B[0][2], B[0][2]), B[1]
+    f32x4.extract_lane 2               ;; S (B[0][2], B[0][2], B[0][2], B[0][2]), B[1][2]
+    f32x4.replace_lane 1               ;; S (B[0][2], B[1][2], B[0][2], B[0][2])
+
+    local.get $aCol2                   ;; S (B[0][2], B[1][2], B[0][2], B[0][2]), B[2]
+    f32x4.extract_lane 2               ;; S (B[0][2], B[1][2], B[0][2], B[0][2]), B[2][2]
+    f32x4.replace_lane 2               ;; S (B[0][2], B[1][2], B[2][2], B[0][2])
+
+    local.get $aCol3                   ;; S (B[0][2], B[1][2], B[2][2], B[0][2]), B[3]
+    f32x4.extract_lane 2               ;; S (B[0][2], B[1][2], B[2][2], B[0][2]), B[3][2]
+    f32x4.replace_lane 3               ;; S (B[0][2], B[1][2], B[2][2], B[3][2])
+    local.set $bRow2                   ;; S -
+
+    ;; Create the rows of B: row3
+    local.get $aCol0                   ;; S B[0]
+    f32x4.extract_lane 3               ;; S B[0][3]
+    f32x4.splat                        ;; S (B[0][3], B[0][3], B[0][3], B[0][3])
+
+    local.get $aCol1                   ;; S (B[0][3], B[0][3], B[0][3], B[0][3]), B[1]
+    f32x4.extract_lane 3               ;; S (B[0][3], B[0][3], B[0][3], B[0][3]), B[1][3]
+    f32x4.replace_lane 1               ;; S (B[0][3], B[1][3], B[0][3], B[0][3])
+
+    local.get $aCol2                   ;; S (B[0][3], B[1][3], B[0][3], B[0][3]), B[2]
+    f32x4.extract_lane 3               ;; S (B[0][3], B[1][3], B[0][3], B[0][3]), B[2][3]
+    f32x4.replace_lane 2               ;; S (B[0][3], B[1][3], B[2][3], B[0][3])
+
+    local.get $aCol3                   ;; S (B[0][3], B[1][3], B[2][3], B[0][3]), B[3]
+    f32x4.extract_lane 3               ;; S (B[0][3], B[1][3], B[2][3], B[0][3]), B[3][3]
+    f32x4.replace_lane 3               ;; S (B[0][3], B[1][3], B[2][3], B[3][3])
+    local.set $bRow3                   ;; S -
+
+    ;; Create the rows of B: row0
+    local.get $aCol0                   ;; S B[0]
+    f32x4.extract_lane 0               ;; S B[0][0]
+    f32x4.splat                        ;; S (B[0][0], B[0][0], B[0][0], B[0][0])
+
+    local.get $aCol1                   ;; S (B[0][0], B[0][0], B[0][0], B[0][0]), B[1]
+    f32x4.extract_lane 0               ;; S (B[0][0], B[0][0], B[0][0], B[0][0]), B[1][0]
+    f32x4.replace_lane 1               ;; S (B[0][0], B[1][0], B[0][0], B[0][0])
+
+    local.get $aCol2                   ;; S (B[0][0], B[1][0], B[0][0], B[0][0]), B[2]
+    f32x4.extract_lane 0               ;; S (B[0][0], B[1][0], B[0][0], B[0][0]), B[2][0]
+    f32x4.replace_lane 2               ;; S (B[0][0], B[1][0], B[2][0], B[0][0])
+
+    local.get $aCol3                   ;; S (B[0][0], B[1][0], B[2][0], B[0][0]), B[3]
+    f32x4.extract_lane 0               ;; S (B[0][0], B[1][0], B[2][0], B[0][0]), B[3][0]
+    f32x4.replace_lane 3               ;; S (B[0][0], B[1][0], B[2][0], B[3][0])
+    local.tee $bRow0                   ;; S bRow0
+
+    ;; Load the columns of matrix A
+    local.get $offsetA                 ;; S bRow0, offsetA
+    v128.load                          ;; S bRow0, A[0]
+    local.tee $aCol0                   ;; S bRow0, aCol0
+    i32.const 16                       ;; S bRow0, aCol0, 16
+    local.get $offsetA                 ;; S bRow0, aCol0, 16, offsetA
+    i32.add                            ;; S bRow0, aCol0, (offsetA + 16)
+    v128.load                          ;; S bRow0, aCol0, A[1]
+    local.set $aCol1                   ;; S bRow0, aCol0, -
+    i32.const 32                       ;; S bRow0, aCol0, 32
+    local.get $offsetA                 ;; S bRow0, aCol0, 32, offsetA
+    i32.add                            ;; S bRow0, aCol0, (offsetA + 32)
+    v128.load                          ;; S bRow0, aCol0, A[2]
+    local.set $aCol2                   ;; S bRow0, aCol0, -
+    i32.const 48                       ;; S bRow0, aCol0, 48
+    local.get $offsetA                 ;; S bRow0, aCol0, 48, offsetA
+    i32.add                            ;; S bRow0, aCol0, (offsetA + 48)
+    v128.load                          ;; S bRow0, aCol0, A[3]
+    local.set $aCol3                   ;; S bRow0, aCol0
+
+    ;; Multiply aCol0 with bRow0
+    f32x4.mul                          ;; S aCol0 * bRow0
+    local.tee $tmp                     ;; S aCol0 * bRow0
+    f32x4.extract_lane 0               ;; S aCol0 * bRow0[0]
+    local.get $tmp                     ;; S aCol0 * bRow0[0], aCol0 * bRow0
+    f32x4.extract_lane 1               ;; S aCol0 * bRow0[0], aCol0 * bRow0[1]
+    f32.add                            ;; S aCol0 * bRow0[0] + aCol0 * bRow0[1]
+    local.get $tmp                     ;; S aCol0 * bRow0[0] + aCol0 * bRow0[1], aCol0 * bRow0
+    f32x4.extract_lane 2               ;; S aCol0 * bRow0[0] + aCol0 * bRow0[1], aCol0 * bRow0[2]
+    f32.add                            ;; S aCol0 * bRow0[0] + aCol0 * bRow0[1] + aCol0 * bRow0[2]
+    local.get $tmp                     ;; S aCol0 * bRow0[0] + aCol0 * bRow0[1] + aCol0 * bRow0[2], aCol0 * bRow0
+    f32x4.extract_lane 3               ;; S aCol0 * bRow0[0] + aCol0 * bRow0[1] + aCol0 * bRow0[2], aCol0 * bRow0[3]
+    f32.add                            ;; S aCol0 * bRow0[0] + aCol0 * bRow0[1] + aCol0 * bRow0[2] + aCol0 * bRow0[3]
+    local.set $r0                      ;; S -
+
+    ;; Multiply aCol0 with bRow1
+    local.get $aCol0                   ;; S aCol0
+    local.get $bRow1                   ;; S aCol0, bRow1
+    f32x4.mul                          ;; S aCol0 * bRow1
+    local.tee $tmp                     ;; S aCol0 * bRow1
+    f32x4.extract_lane 0               ;; S aCol0 * bRow1[0]
+    local.get $tmp                     ;; S aCol0 * bRow1[0], aCol0 * bRow1
+    f32x4.extract_lane 1               ;; S aCol0 * bRow1[0], aCol0 * bRow1[1]
+    f32.add                            ;; S aCol0 * bRow1[0] + aCol0 * bRow1[1]
+    local.get $tmp                     ;; S aCol0 * bRow1[0] + aCol0 * bRow1[1], aCol0 * bRow1
+    f32x4.extract_lane 2               ;; S aCol0 * bRow1[0] + aCol0 * bRow1[1], aCol0 * bRow1[2]
+    f32.add                            ;; S aCol0 * bRow1[0] + aCol0 * bRow1[1] + aCol0 * bRow1[2]
+    local.get $tmp                     ;; S aCol0 * bRow1[0] + aCol0 * bRow1[1] + aCol0 * bRow1[2], aCol0 * bRow1
+    f32x4.extract_lane 3               ;; S aCol0 * bRow1[0] + aCol0 * bRow1[1] + aCol0 * bRow1[2], aCol0 * bRow1[3]
+    f32.add                            ;; S aCol0 * bRow1[0] + aCol0 * bRow1[1] + aCol0 * bRow1[2] + aCol0 * bRow1[3]
+    local.set $r1                      ;; S -
+
+    ;; Multiply aCol0 with bRow2
+    local.get $aCol0                   ;; S aCol0
+    local.get $bRow2                   ;; S aCol0, bRow2
+    f32x4.mul                          ;; S aCol0 * bRow2
+    local.tee $tmp                     ;; S aCol0 * bRow2
+    f32x4.extract_lane 0               ;; S aCol0 * bRow2[0]
+    local.get $tmp                     ;; S aCol0 * bRow2[0], aCol0 * bRow2
+    f32x4.extract_lane 1               ;; S aCol0 * bRow2[0], aCol0 * bRow2[1]
+    f32.add                            ;; S aCol0 * bRow2[0] + aCol0 * bRow2[1]
+    local.get $tmp                     ;; S aCol0 * bRow2[0] + aCol0 * bRow2[1], aCol0 * bRow2
+    f32x4.extract_lane 2               ;; S aCol0 * bRow2[0] + aCol0 * bRow2[1], aCol0 * bRow2[2]
+    f32.add                            ;; S aCol0 * bRow2[0] + aCol0 * bRow2[1] + aCol0 * bRow2[2]
+    local.get $tmp                     ;; S aCol0 * bRow2[0] + aCol0 * bRow2[1] + aCol0 * bRow2[2], aCol0 * bRow2
+    f32x4.extract_lane 3               ;; S aCol0 * bRow2[0] + aCol0 * bRow2[1] + aCol0 * bRow2[2], aCol0 * bRow2[3]
+    f32.add                            ;; S aCol0 * bRow2[0] + aCol0 * bRow2[1] + aCol0 * bRow2[2] + aCol0 * bRow2[3]
+    local.set $r2                      ;; S -
+
+    ;; Prepare to store the 1st column of the result matrix: Load offsetResult: oR
+    local.get $offsetResult            ;; S oR
+
+    ;; Multiply aCol0 with bRow3
+    local.get $aCol0                   ;; S oR, aCol0
+    local.get $bRow3                   ;; S oR, aCol0, bRow3
+    f32x4.mul                          ;; S oR, aCol0 * bRow3
+    local.tee $tmp                     ;; S oR, aCol0 * bRow3
+    f32x4.extract_lane 0               ;; S oR, aCol0 * bRow3[0]
+    local.get $tmp                     ;; S oR, aCol0 * bRow3[0], aCol0 * bRow3
+    f32x4.extract_lane 1               ;; S oR, aCol0 * bRow3[0], aCol0 * bRow3[1]
+    f32.add                            ;; S oR, aCol0 * bRow3[0] + aCol0 * bRow3[1]
+    local.get $tmp                     ;; S oR, aCol0 * bRow3[0] + aCol0 * bRow3[1], aCol0 * bRow3
+    f32x4.extract_lane 2               ;; S oR, aCol0 * bRow3[0] + aCol0 * bRow3[1], aCol0 * bRow3[2]
+    f32.add                            ;; S oR, aCol0 * bRow3[0] + aCol0 * bRow3[1] + aCol0 * bRow3[2]
+    local.get $tmp                     ;; S oR, aCol0 * bRow3[0] + aCol0 * bRow3[1] + aCol0 * bRow3[2], aCol0 * bRow3
+    f32x4.extract_lane 3               ;; S oR, aCol0 * bRow3[0] + aCol0 * bRow3[1] + aCol0 * bRow3[2], aCol0 * bRow3[3]
+    f32.add                            ;; S oR, aCol0 * bRow3[0] + aCol0 * bRow3[1] + aCol0 * bRow3[2] + aCol0 * bRow3[3]
+    local.tee $r3                      ;; S oR, r3
+
+    ;; Create the first column of the result matrix
+    f32x4.splat                        ;; S oR, (r3, r3, r3, r3)
+    local.get $r0                      ;; S oR, (r3, r3, r3, r3), r0
+    f32x4.replace_lane 0               ;; S oR, (r0, r3, r3, r3)
+    local.get $r1                      ;; S oR, (r0, r3, r3, r3), r1
+    f32x4.replace_lane 1               ;; S oR, (r0, r1, r3, r3)
+    local.get $r2                      ;; S oR, (r0, r1, r3, r3), r2
+    f32x4.replace_lane 2               ;; S oR, (r0, r1, r2, r3)
+
+    ;; Store the first column of the result matrix
+    v128.store                        ;; S -
+
+    ;; Multiply aCol1 with bRow0
+    local.get $aCol1                   ;; S aCol1
+    local.get $bRow0                   ;; S aCol1, bRow0
+    f32x4.mul                          ;; S aCol1 * bRow0
+    local.tee $tmp                     ;; S aCol1 * bRow0
+    f32x4.extract_lane 0               ;; S aCol1 * bRow0[0]
+    local.get $tmp                     ;; S aCol1 * bRow0[0], aCol1 * bRow0
+    f32x4.extract_lane 1               ;; S aCol1 * bRow0[0], aCol1 * bRow0[1]
+    f32.add                            ;; S aCol1 * bRow0[0] + aCol1 * bRow0[1]
+    local.get $tmp                     ;; S aCol1 * bRow0[0] + aCol1 * bRow0[1], aCol1 * bRow0
+    f32x4.extract_lane 2               ;; S aCol1 * bRow0[0] + aCol1 * bRow0[1], aCol1 * bRow0[2]
+    f32.add                            ;; S aCol1 * bRow0[0] + aCol1 * bRow0[1] + aCol1 * bRow0[2]
+    local.get $tmp                     ;; S aCol1 * bRow0[0] + aCol1 * bRow0[1] + aCol1 * bRow0[2], aCol1 * bRow0
+    f32x4.extract_lane 3               ;; S aCol1 * bRow0[0] + aCol1 * bRow0[1] + aCol1 * bRow0[2], aCol1 * bRow0[3]
+    f32.add                            ;; S aCol1 * bRow0[0] + aCol1 * bRow0[1] + aCol1 * bRow0[2] + aCol1 * bRow0[3]
+    local.set $r0                      ;; S -
+
+    ;; Multiply aCol1 with bRow1
+    local.get $aCol1                   ;; S aCol1
+    local.get $bRow1                   ;; S aCol1, bRow1
+    f32x4.mul                          ;; S aCol1 * bRow1
+    local.tee $tmp                     ;; S aCol1 * bRow1
+    f32x4.extract_lane 0               ;; S aCol1 * bRow1[0]
+    local.get $tmp                     ;; S aCol1 * bRow1[0], aCol1 * bRow1
+    f32x4.extract_lane 1               ;; S aCol1 * bRow1[0], aCol1 * bRow1[1]
+    f32.add                            ;; S aCol1 * bRow1[0] + aCol1 * bRow1[1]
+    local.get $tmp                     ;; S aCol1 * bRow1[0] + aCol1 * bRow1[1], aCol1 * bRow1
+    f32x4.extract_lane 2               ;; S aCol1 * bRow1[0] + aCol1 * bRow1[1], aCol1 * bRow1[2]
+    f32.add                            ;; S aCol1 * bRow1[0] + aCol1 * bRow1[1] + aCol1 * bRow1[2]
+    local.get $tmp                     ;; S aCol1 * bRow1[0] + aCol1 * bRow1[1] + aCol1 * bRow1[2], aCol1 * bRow1
+    f32x4.extract_lane 3               ;; S aCol1 * bRow1[0] + aCol1 * bRow1[1] + aCol1 * bRow1[2], aCol1 * bRow1[3]
+    f32.add                            ;; S aCol1 * bRow1[0] + aCol1 * bRow1[1] + aCol1 * bRow1[2] + aCol1 * bRow1[3]
+    local.set $r1                      ;; S -
+
+    ;; Multiply aCol1 with bRow2
+    local.get $aCol1                   ;; S aCol1
+    local.get $bRow2                   ;; S aCol1, bRow2
+    f32x4.mul                          ;; S aCol1 * bRow2
+    local.tee $tmp                     ;; S aCol1 * bRow2
+    f32x4.extract_lane 0               ;; S aCol1 * bRow2[0]
+    local.get $tmp                     ;; S aCol1 * bRow2[0], aCol1 * bRow2
+    f32x4.extract_lane 1               ;; S aCol1 * bRow2[0], aCol1 * bRow2[1]
+    f32.add                            ;; S aCol1 * bRow2[0] + aCol1 * bRow2[1]
+    local.get $tmp                     ;; S aCol1 * bRow2[0] + aCol1 * bRow2[1], aCol1 * bRow2
+    f32x4.extract_lane 2               ;; S aCol1 * bRow2[0] + aCol1 * bRow2[1], aCol1 * bRow2[2]
+    f32.add                            ;; S aCol1 * bRow2[0] + aCol1 * bRow2[1] + aCol1 * bRow2[2]
+    local.get $tmp                     ;; S aCol1 * bRow2[0] + aCol1 * bRow2[1] + aCol1 * bRow2[2], aCol1 * bRow2
+    f32x4.extract_lane 3               ;; S aCol1 * bRow2[0] + aCol1 * bRow2[1] + aCol1 * bRow2[2], aCol1 * bRow2[3]
+    f32.add                            ;; S aCol1 * bRow2[0] + aCol1 * bRow2[1] + aCol1 * bRow2[2] + aCol1 * bRow2[3]
+    local.set $r2                      ;; S -
+
+    ;; Prepare to store the 2nd column of the result matrix: Load offsetResult: oR
+    local.get $offsetResult            ;; S oR
+    i32.const 16                       ;; S oR, 16
+    i32.add                            ;; S (oR + 16)
+
+    ;; Multiply aCol1 with bRow3
+    local.get $aCol1                   ;; S (oR + 16), aCol1
+    local.get $bRow3                   ;; S (oR + 16), aCol1, bRow3
+    f32x4.mul                          ;; S (oR + 16), aCol1 * bRow3
+    local.tee $tmp                     ;; S (oR + 16), aCol1 * bRow3
+    f32x4.extract_lane 0               ;; S (oR + 16), aCol1 * bRow3[0]
+    local.get $tmp                     ;; S (oR + 16), aCol1 * bRow3[0], aCol1 * bRow3
+    f32x4.extract_lane 1               ;; S (oR + 16), aCol1 * bRow3[0], aCol1 * bRow3[1]
+    f32.add                            ;; S (oR + 16), aCol1 * bRow3[0] + aCol1 * bRow3[1]
+    local.get $tmp                     ;; S (oR + 16), aCol1 * bRow3[0] + aCol1 * bRow3[1], aCol1 * bRow3
+    f32x4.extract_lane 2               ;; S (oR + 16), aCol1 * bRow3[0] + aCol1 * bRow3[1], aCol1 * bRow3[2]
+    f32.add                            ;; S (oR + 16), aCol1 * bRow3[0] + aCol1 * bRow3[1] + aCol1 * bRow3[2]
+    local.get $tmp                     ;; S (oR + 16), aCol1 * bRow3[0] + aCol1 * bRow3[1] + aCol1 * bRow3[2], aCol1 * bRow3
+    f32x4.extract_lane 3               ;; S (oR + 16), aCol1 * bRow3[0] + aCol1 * bRow3[1] + aCol1 * bRow3[2], aCol1 * bRow3[3]
+    f32.add                            ;; S (oR + 16), aCol1 * bRow3[0] + aCol1 * bRow3[1] + aCol1 * bRow3[2] + aCol1 * bRow3[3]
+    local.tee $r3                      ;; S (oR + 16), r3
+
+    ;; Create the second column of the result matrix
+    f32x4.splat                        ;; S (oR + 16), (r3, r3, r3, r3)
+    local.get $r0                      ;; S (oR + 16), (r3, r3, r3, r3), r0
+    f32x4.replace_lane 0               ;; S (oR + 16), (r0, r3, r3, r3)
+    local.get $r1                      ;; S (oR + 16), (r0, r3, r3, r3), r1
+    f32x4.replace_lane 1               ;; S (oR + 16), (r0, r1, r3, r3)
+    local.get $r2                      ;; S (oR + 16), (r0, r1, r3, r3), r2
+    f32x4.replace_lane 2               ;; S (oR + 16), (r0, r1, r2, r3)
+
+    ;; Store the second column of the result matrix
+    v128.store                        ;; S -
+
+    ;; Multiply aCol2 with bRow0
+    local.get $aCol2                   ;; S aCol2
+    local.get $bRow0                   ;; S aCol2, bRow0
+    f32x4.mul                          ;; S aCol2 * bRow0
+    local.tee $tmp                     ;; S aCol2 * bRow0
+    f32x4.extract_lane 0               ;; S aCol2 * bRow0[0]
+    local.get $tmp                     ;; S aCol2 * bRow0[0], aCol2 * bRow0
+    f32x4.extract_lane 1               ;; S aCol2 * bRow0[0], aCol2 * bRow0[1]
+    f32.add                            ;; S aCol2 * bRow0[0] + aCol2 * bRow0[1]
+    local.get $tmp                     ;; S aCol2 * bRow0[0] + aCol2 * bRow0[1], aCol2 * bRow0
+    f32x4.extract_lane 2               ;; S aCol2 * bRow0[0] + aCol2 * bRow0[1], aCol2 * bRow0[2]
+    f32.add                            ;; S aCol2 * bRow0[0] + aCol2 * bRow0[1] + aCol2 * bRow0[2]
+    local.get $tmp                     ;; S aCol2 * bRow0[0] + aCol2 * bRow0[1] + aCol2 * bRow0[2], aCol2 * bRow0
+    f32x4.extract_lane 3               ;; S aCol2 * bRow0[0] + aCol2 * bRow0[1] + aCol2 * bRow0[2], aCol2 * bRow0[3]
+    f32.add                            ;; S aCol2 * bRow0[0] + aCol2 * bRow0[1] + aCol2 * bRow0[2] + aCol2 * bRow0[3]
+    local.set $r0                      ;; S -
+
+    ;; Multiply aCol2 with bRow1
+    local.get $aCol2                   ;; S aCol2
+    local.get $bRow1                   ;; S aCol2, bRow1
+    f32x4.mul                          ;; S aCol2 * bRow1
+    local.tee $tmp                     ;; S aCol2 * bRow1
+    f32x4.extract_lane 0               ;; S aCol2 * bRow1[0]
+    local.get $tmp                     ;; S aCol2 * bRow1[0], aCol2 * bRow1
+    f32x4.extract_lane 1               ;; S aCol2 * bRow1[0], aCol2 * bRow1[1]
+    f32.add                            ;; S aCol2 * bRow1[0] + aCol2 * bRow1[1]
+    local.get $tmp                     ;; S aCol2 * bRow1[0] + aCol2 * bRow1[1], aCol2 * bRow1
+    f32x4.extract_lane 2               ;; S aCol2 * bRow1[0] + aCol2 * bRow1[1], aCol2 * bRow1[2]
+    f32.add                            ;; S aCol2 * bRow1[0] + aCol2 * bRow1[1] + aCol2 * bRow1[2]
+    local.get $tmp                     ;; S aCol2 * bRow1[0] + aCol2 * bRow1[1] + aCol2 * bRow1[2], aCol2 * bRow1
+    f32x4.extract_lane 3               ;; S aCol2 * bRow1[0] + aCol2 * bRow1[1] + aCol2 * bRow1[2], aCol2 * bRow1[3]
+    f32.add                            ;; S aCol2 * bRow1[0] + aCol2 * bRow1[1] + aCol2 * bRow1[2] + aCol2 * bRow1[3]
+    local.set $r1                      ;; S -
+
+    ;; Multiply aCol2 with bRow2
+    local.get $aCol2                   ;; S aCol2
+    local.get $bRow2                   ;; S aCol2, bRow2
+    f32x4.mul                          ;; S aCol2 * bRow2
+    local.tee $tmp                     ;; S aCol2 * bRow2
+    f32x4.extract_lane 0               ;; S aCol2 * bRow2[0]
+    local.get $tmp                     ;; S aCol2 * bRow2[0], aCol2 * bRow2
+    f32x4.extract_lane 1               ;; S aCol2 * bRow2[0], aCol2 * bRow2[1]
+    f32.add                            ;; S aCol2 * bRow2[0] + aCol2 * bRow2[1]
+    local.get $tmp                     ;; S aCol2 * bRow2[0] + aCol2 * bRow2[1], aCol2 * bRow2
+    f32x4.extract_lane 2               ;; S aCol2 * bRow2[0] + aCol2 * bRow2[1], aCol2 * bRow2[2]
+    f32.add                            ;; S aCol2 * bRow2[0] + aCol2 * bRow2[1] + aCol2 * bRow2[2]
+    local.get $tmp                     ;; S aCol2 * bRow2[0] + aCol2 * bRow2[1] + aCol2 * bRow2[2], aCol2 * bRow2
+    f32x4.extract_lane 3               ;; S aCol2 * bRow2[0] + aCol2 * bRow2[1] + aCol2 * bRow2[2], aCol2 * bRow2[3]
+    f32.add                            ;; S aCol2 * bRow2[0] + aCol2 * bRow2[1] + aCol2 * bRow2[2] + aCol2 * bRow2[3]
+    local.set $r2                      ;; S -
+
+    ;; Prepare to store the 3rd column of the result matrix: Load offsetResult: oR
+    local.get $offsetResult            ;; S oR
+    i32.const 32                       ;; S oR, 32
+    i32.add                            ;; S (oR + 32)
+
+    ;; Multiply aCol2 with bRow3
+    local.get $aCol2                   ;; S (oR + 32), aCol2
+    local.get $bRow3                   ;; S (oR + 32), aCol2, bRow3
+    f32x4.mul                          ;; S (oR + 32), aCol2 * bRow3
+    local.tee $tmp                     ;; S (oR + 32), aCol2 * bRow3
+    f32x4.extract_lane 0               ;; S (oR + 32), aCol2 * bRow3[0]
+    local.get $tmp                     ;; S (oR + 32), aCol2 * bRow3[0], aCol2 * bRow3
+    f32x4.extract_lane 1               ;; S (oR + 32), aCol2 * bRow3[0], aCol2 * bRow3[1]
+    f32.add                            ;; S (oR + 32), aCol2 * bRow3[0] + aCol2 * bRow3[1]
+    local.get $tmp                     ;; S (oR + 32), aCol2 * bRow3[0] + aCol2 * bRow3[1], aCol2 * bRow3
+    f32x4.extract_lane 2               ;; S (oR + 32), aCol2 * bRow3[0] + aCol2 * bRow3[1], aCol2 * bRow3[2]
+    f32.add                            ;; S (oR + 32), aCol2 * bRow3[0] + aCol2 * bRow3[1] + aCol2 * bRow3[2]
+    local.get $tmp                     ;; S (oR + 32), aCol2 * bRow3[0] + aCol2 * bRow3[1] + aCol2 * bRow3[2], aCol2 * bRow3
+    f32x4.extract_lane 3               ;; S (oR + 32), aCol2 * bRow3[0] + aCol2 * bRow3[1] + aCol2 * bRow3[2], aCol2 * bRow3[3]
+    f32.add                            ;; S (oR + 32), aCol2 * bRow3[0] + aCol2 * bRow3[1] + aCol2 * bRow3[2] + aCol2 * bRow3[3]
+    local.tee $r3                      ;; S (oR + 32), r3
+
+    ;; Create the third column of the result matrix
+    f32x4.splat                        ;; S (oR + 32), (r3, r3, r3, r3)
+    local.get $r0                      ;; S (oR + 32), (r3, r3, r3, r3), r0
+    f32x4.replace_lane 0               ;; S (oR + 32), (r0, r3, r3, r3)
+    local.get $r1                      ;; S (oR + 32), (r0, r3, r3, r3), r1
+    f32x4.replace_lane 1               ;; S (oR + 32), (r0, r1, r3, r3)
+    local.get $r2                      ;; S (oR + 32), (r0, r1, r3, r3), r2
+    f32x4.replace_lane 2               ;; S (oR + 32), (r0, r1, r2, r3)
+
+    ;; Store the third column of the result matrix
+    v128.store                        ;; S -
+
+    ;; Multiply aCol3 with bRow0
+    local.get $aCol3                   ;; S aCol3
+    local.get $bRow0                   ;; S aCol3, bRow0
+    f32x4.mul                          ;; S aCol3 * bRow0
+    local.tee $tmp                     ;; S aCol3 * bRow0
+    f32x4.extract_lane 0               ;; S aCol3 * bRow0[0]
+    local.get $tmp                     ;; S aCol3 * bRow0[0], aCol3 * bRow0
+    f32x4.extract_lane 1               ;; S aCol3 * bRow0[0], aCol3 * bRow0[1]
+    f32.add                            ;; S aCol3 * bRow0[0] + aCol3 * bRow0[1]
+    local.get $tmp                     ;; S aCol3 * bRow0[0] + aCol3 * bRow0[1], aCol3 * bRow0
+    f32x4.extract_lane 2               ;; S aCol3 * bRow0[0] + aCol3 * bRow0[1], aCol3 * bRow0[2]
+    f32.add                            ;; S aCol3 * bRow0[0] + aCol3 * bRow0[1] + aCol3 * bRow0[2]
+    local.get $tmp                     ;; S aCol3 * bRow0[0] + aCol3 * bRow0[1] + aCol3 * bRow0[2], aCol3 * bRow0
+    f32x4.extract_lane 3               ;; S aCol3 * bRow0[0] + aCol3 * bRow0[1] + aCol3 * bRow0[2], aCol3 * bRow0[3]
+    f32.add                            ;; S aCol3 * bRow0[0] + aCol3 * bRow0[1] + aCol3 * bRow0[2] + aCol3 * bRow0[3]
+    local.set $r0                      ;; S -
+
+    ;; Multiply aCol3 with bRow1
+    local.get $aCol3                   ;; S aCol3
+    local.get $bRow1                   ;; S aCol3, bRow1
+    f32x4.mul                          ;; S aCol3 * bRow1
+    local.tee $tmp                     ;; S aCol3 * bRow1
+    f32x4.extract_lane 0               ;; S aCol3 * bRow1[0]
+    local.get $tmp                     ;; S aCol3 * bRow1[0], aCol3 * bRow1
+    f32x4.extract_lane 1               ;; S aCol3 * bRow1[0], aCol3 * bRow1[1]
+    f32.add                            ;; S aCol3 * bRow1[0] + aCol3 * bRow1[1]
+    local.get $tmp                     ;; S aCol3 * bRow1[0] + aCol3 * bRow1[1], aCol3 * bRow1
+    f32x4.extract_lane 2               ;; S aCol3 * bRow1[0] + aCol3 * bRow1[1], aCol3 * bRow1[2]
+    f32.add                            ;; S aCol3 * bRow1[0] + aCol3 * bRow1[1] + aCol3 * bRow1[2]
+    local.get $tmp                     ;; S aCol3 * bRow1[0] + aCol3 * bRow1[1] + aCol3 * bRow1[2], aCol3 * bRow1
+    f32x4.extract_lane 3               ;; S aCol3 * bRow1[0] + aCol3 * bRow1[1] + aCol3 * bRow1[2], aCol3 * bRow1[3]
+    f32.add                            ;; S aCol3 * bRow1[0] + aCol3 * bRow1[1] + aCol3 * bRow1[2] + aCol3 * bRow1[3]
+    local.set $r1                      ;; S -
+
+    ;; Multiply aCol3 with bRow2
+    local.get $aCol3                   ;; S aCol3
+    local.get $bRow2                   ;; S aCol3, bRow2
+    f32x4.mul                          ;; S aCol3 * bRow2
+    local.tee $tmp                     ;; S aCol3 * bRow2
+    f32x4.extract_lane 0               ;; S aCol3 * bRow2[0]
+    local.get $tmp                     ;; S aCol3 * bRow2[0], aCol3 * bRow2
+    f32x4.extract_lane 1               ;; S aCol3 * bRow2[0], aCol3 * bRow2[1]
+    f32.add                            ;; S aCol3 * bRow2[0] + aCol3 * bRow2[1]
+    local.get $tmp                     ;; S aCol3 * bRow2[0] + aCol3 * bRow2[1], aCol3 * bRow2
+    f32x4.extract_lane 2               ;; S aCol3 * bRow2[0] + aCol3 * bRow2[1], aCol3 * bRow2[2]
+    f32.add                            ;; S aCol3 * bRow2[0] + aCol3 * bRow2[1] + aCol3 * bRow2[2]
+    local.get $tmp                     ;; S aCol3 * bRow2[0] + aCol3 * bRow2[1] + aCol3 * bRow2[2], aCol3 * bRow2
+    f32x4.extract_lane 3               ;; S aCol3 * bRow2[0] + aCol3 * bRow2[1] + aCol3 * bRow2[2], aCol3 * bRow2[3]
+    f32.add                            ;; S aCol3 * bRow2[0] + aCol3 * bRow2[1] + aCol3 * bRow2[2] + aCol3 * bRow2[3]
+    local.set $r2                      ;; S -
+
+    ;; Prepare to store the 4th column of the result matrix: Load offsetResult: oR
+    local.get $offsetResult            ;; S oR
+    i32.const 48                       ;; S oR, 48
+    i32.add                            ;; S (oR + 48)
+
+    ;; Multiply aCol3 with bRow3
+    local.get $aCol3                   ;; S (oR + 48), aCol3
+    local.get $bRow3                   ;; S (oR + 48), aCol3, bRow3
+    f32x4.mul                          ;; S (oR + 48), aCol3 * bRow3
+    local.tee $tmp                     ;; S (oR + 48), aCol3 * bRow3
+    f32x4.extract_lane 0               ;; S (oR + 48), aCol3 * bRow3[0]
+    local.get $tmp                     ;; S (oR + 48), aCol3 * bRow3[0], aCol3 * bRow3
+    f32x4.extract_lane 1               ;; S (oR + 48), aCol3 * bRow3[0], aCol3 * bRow3[1]
+    f32.add                            ;; S (oR + 48), aCol3 * bRow3[0] + aCol3 * bRow3[1]
+    local.get $tmp                     ;; S (oR + 48), aCol3 * bRow3[0] + aCol3 * bRow3[1], aCol3 * bRow3
+    f32x4.extract_lane 2               ;; S (oR + 48), aCol3 * bRow3[0] + aCol3 * bRow3[1], aCol3 * bRow3[2]
+    f32.add                            ;; S (oR + 48), aCol3 * bRow3[0] + aCol3 * bRow3[1] + aCol3 * bRow3[2]
+    local.get $tmp                     ;; S (oR + 48), aCol3 * bRow3[0] + aCol3 * bRow3[1] + aCol3 * bRow3[2], aCol3 * bRow3
+    f32x4.extract_lane 3               ;; S (oR + 48), aCol3 * bRow3[0] + aCol3 * bRow3[1] + aCol3 * bRow3[2], aCol3 * bRow3[3]
+    f32.add                            ;; S (oR + 48), aCol3 * bRow3[0] + aCol3 * bRow3[1] + aCol3 * bRow3[2] + aCol3 * bRow3[3]
+    local.tee $r3                      ;; S (oR + 48), r3
+
+    ;; Create the fourth column of the result matrix
+    f32x4.splat                        ;; S (oR + 48), (r3, r3, r3, r3)
+    local.get $r0                      ;; S (oR + 48), (r3, r3, r3, r3), r0
+    f32x4.replace_lane 0               ;; S (oR + 48), (r0, r3, r3, r3)
+    local.get $r1                      ;; S (oR + 48), (r0, r3, r3, r3), r1
+    f32x4.replace_lane 1               ;; S (oR + 48), (r0, r1, r3, r3)
+    local.get $r2                      ;; S (oR + 48), (r0, r1, r3, r3), r2
+    f32x4.replace_lane 2               ;; S (oR + 48), (r0, r1, r2, r3)
+
+    ;; Store the fourth column of the result matrix
+    v128.store                        ;; S -
+  )
 )

@@ -30,4 +30,5 @@ export const {
 
   mCreateRotQuat,
   mCreateRotQuatData,
+  mMulMat,
 } = mathInstance.exports;

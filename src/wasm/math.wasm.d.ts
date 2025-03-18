@@ -131,6 +131,15 @@ interface MathWasm {
    * @param offsetResult MemoryOffset of the result matrix.
    */
   mCreateRotQuatData(x: number, y: number, z: number, w: number, offsetResult: number): void;
+
+  /**
+   * Multiplies two matrices.
+   *
+   * @param offsetA MemoryOffset of the first matrix.
+   * @param offsetB MemoryOffset of the second matrix.
+   * @param offsetResult MemoryOffset of the result matrix.
+   */
+  mMulMat(offsetA: number, offsetB: number, offsetResult: number): void;
 }
 
 export interface MathInstance {

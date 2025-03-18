@@ -154,6 +154,51 @@ A comparison to an `Emscripten`-compiled C implementation will be added soon.
 
 A cross product isn't that complex. However, if the performance gain is already 3x for this simple operation, the gain for more complex operations like matrix-matrix multiplication will be even higher.
 
+### Update: Matrix-Matrix Multiplication
+```ts
+import { Matrix4, Matrix4Data } from "wasm-math";
+
+(() => {
+  const a: Matrix4Data = [
+    -0.232, 0.123, 0.456, 0.789,
+    0.321, 0.654, -0.987, 0.123,
+    0.456, -0.789, 0.123, 0.456,
+    0.654, 0.987, 0.123, -0.456,
+  ];
+  const b: Matrix4Data = [
+    0.123, 0.456, 0.789, -0.232,
+    0.654, -0.987, 0.123, 0.321,
+    -0.789, 0.123, 0.456, 0.654,
+    0.987, 0.123, -0.456, 0.987,
+  ];
+
+  using ma = new Matrix4(a);
+  using mb = new Matrix4(b);
+  using mr = new Matrix4();
+
+  const t0 = performance.now();
+  for (let i = 0; i < 100_000_000; ++i) {
+    Matrix4.multiply(ma, mb, mr);
+  }
+  const t1 = performance.now();
+  for (let i = 0; i < 100_000_000; ++i) {
+    Matrix4.multiply_ts(ma, mb, mr);
+  }
+  const t2 = performance.now();
+
+  console.log(`WASM Time: ${(t1 - t0).toFixed(3)}ms`);
+  console.log(`TS Time: ${(t2 - t1).toFixed(3)}ms`);
+  console.log(`Speedup: ${((t2 - t1) / (t1 - t0)).toFixed(2)}`);
+})();
+```
+Output:
+```
+WASM Time: 2058.740ms
+TS Time: 8691.420ms
+Speedup: 4.22
+```
+The results are exceptional. The WebAssembly implementation is 4.22 times as fast as the TypeScript implementation!
+
 ## Memory management insights and challenges
 Tests have shown that if the Vector3, Quaternion, and Matrix4 classes are not written with efficient memory management in mind from the start, any speed advantage gained by using WebAssembly is negated by the necessary marshaling between JavaScript and WebAssembly.
 
