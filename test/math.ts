@@ -5,6 +5,7 @@ export {
   QuaternionData,
   Matrix4,
   Matrix4Data,
+  EulerOrder,
 } from "../dist/wasm-math.js";
 
 export type VecX1 = {
