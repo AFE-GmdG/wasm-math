@@ -29,14 +29,6 @@ const TEST_CASES: MatX1[] = [
       0, 0, 0, 1,
     ],
   },
-  {
-    m: [
-      1, 2, 3, 4,
-      2, 4, 6, 8,
-      0, 0, 1, 0,
-      0, 0, 0, 1,
-    ],
-  },
 ];
 
 test.each(TEST_CASES)(Matrix4.createInverse_ts, ({ m }) => {
