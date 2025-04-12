@@ -1,6 +1,5 @@
-import process from "node:process";
-
 import { defineConfig } from "vitest/config";
+import { wasm } from "@rollup/plugin-wasm";
 
 export default defineConfig({
   test: {
@@ -12,5 +11,7 @@ export default defineConfig({
     },
   },
   plugins: [
+    wasm({ // https://github.com/rollup/plugins/tree/master/packages/wasm/#options
+    }),
   ],
 });

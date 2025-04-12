@@ -1,11 +1,14 @@
+import { EulerOrder } from "./eulerOrder";
 import {
   memory,
   mCreateRotQuat,
   mCreateRotQuatData,
   mMulMat,
 } from "./math";
-import { Quaternion, QuaternionData } from "./quat";
-import { Vector3, Vector3Data } from "./vec3";
+import type { QuaternionData } from "./quat";
+import { Quaternion } from "./quat";
+import type { Vector3Data } from "./vec3";
+import { Vector3 } from "./vec3";
 
 // Array of Matrix4 instances. The index * 64 + 131072 is the offset in the memory.
 const privateOffsetArray: (Matrix4 | null)[] = new Array(4096).fill(null);
@@ -421,7 +424,108 @@ export class Matrix4 implements Disposable {
     return result;
   }
 
-  // TODO: createFromEuler with EulerOrder and a useful default
+  /**
+   * TODO
+   * Creates a new Matrix4 which is rotated by the given Euler angles.
+   *
+   * @param rotation The rotation vector.
+   * @param eulerOrder The order of the Euler angles.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createFromEuler(rotation: Vector3, eulerOrder: EulerOrder, result?: Matrix4): Matrix4;
+  /**
+   * TODO
+   * Creates a new Matrix4 which is rotated by the given Euler angles.
+   *
+   * @param rotation The rotation vector.
+   * @param eulerOrder The order of the Euler angles.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createFromEuler(rotation: Vector3Data, eulerOrder: EulerOrder, result?: Matrix4): Matrix4;
+  static createFromEuler(rotation: Vector3 | Vector3Data, eulerOrder: EulerOrder, result = new Matrix4()): Matrix4 {
+    throw new Error(`Not implemented: rotation=${rotation}, eulerOrder=${eulerOrder}, result=${result}`);
+  }
+
+  /**
+   * Creates a new Matrix4 which is rotated by the given Euler angles.
+   * (TypeScript version)
+   *
+   * @param rotation The rotation vector.
+   * @param eulerOrder The order of the Euler angles.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createFromEuler_ts(rotation: Vector3, eulerOrder: EulerOrder, result?: Matrix4): Matrix4;
+  /**
+   * Creates a new Matrix4 which is rotated by the given Euler angles.
+   * (TypeScript version)
+   *
+   * @param rotation The rotation vector.
+   * @param eulerOrder The order of the Euler angles.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createFromEuler_ts(rotation: Vector3Data, eulerOrder: EulerOrder, result?: Matrix4): Matrix4;
+  static createFromEuler_ts(rotation: Vector3 | Vector3Data, eulerOrder: EulerOrder, result = new Matrix4()): Matrix4 {
+    const [x, y, z] = rotation instanceof Vector3
+      ? rotation.get()
+      : rotation;
+
+    const cx = Math.cos(x); const cy = Math.cos(y); const cz = Math.cos(z);
+    const sx = Math.sin(x); const sy = Math.sin(y); const sz = Math.sin(z);
+
+    switch (eulerOrder) {
+      case EulerOrder.XYZ:
+        result.set([
+          cy * cz, -cy * sz, sy, 0,
+          cx * sz + sx * sy * cz, cx * cz - sx * sy * sz, -sx * cy, 0,
+          sx * sz - cx * sy * cz, sx * cz + cx * sy * sz, cx * cy, 0,
+          0, 0, 0, 1,
+        ]);
+        break;
+      case EulerOrder.XZY:
+        result.set([
+          cy * cz, -sz, cz * sy, 0,
+          sx * sy + cx * cy * sz, cx * cz, -cy * sx + cx * sy * sz, 0,
+          -cx * sy + cy * sx * sz, cz * sx, cx * cy + sx * sy * sz, 0,
+          0, 0, 0, 1,
+        ]);
+        break;
+      case EulerOrder.YXZ:
+        result.set([
+          cy * cz + sx * sy * sz, cz * sx * sy - cy * sz, cx * sy, 0,
+          cx * sz, cx * cz, -sx, 0,
+          cy * sx * sz - cz * sy, cy * cz * sx + sy * sz, cx * cy, 0,
+          0, 0, 0, 1,
+        ]);
+        break;
+      case EulerOrder.YZX:
+        result.set([
+          cy * cz, sx * sy - cx * cy * sz, cx * sy + cy * sx * sz, 0,
+          sz, cx * cz, -cz * sx, 0,
+          -cz * sy, cy * sx + cx * sy * sz, cx * cy - sx * sy * sz, 0,
+          0, 0, 0, 1,
+        ]);
+        break;
+      case EulerOrder.ZXY:
+        result.set([
+          cy * cz - sx * sy * sz, -cx * sz, cz * sy + cy * sx * sz, 0,
+          cz * sx * sy + cy * sz, cx * cz, cy * cz * sx - sy * sz, 0,
+          -cx * sy, sx, cx * cy, 0,
+          0, 0, 0, 1,
+        ]);
+        break;
+      case EulerOrder.ZYX:
+        result.set([
+          cy * cz, -sz, cz * sy, 0,
+          cy * sz, cz, -sz * sy, 0,
+          -sy, 0, cy, 0,
+          0, 0, 0, 1,
+        ]);
+        break;
+    }
+
+    return result;
+  }
+
   // TODO: createScale
   // TODO: createInverse
   // TODO: createOrthographic
