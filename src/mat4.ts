@@ -5,8 +5,10 @@ import {
   mCreateRotQuatData,
   mMulMat,
 } from "./math";
-import { Quaternion, QuaternionData } from "./quat";
-import { Vector3, Vector3Data } from "./vec3";
+import type { QuaternionData } from "./quat";
+import { Quaternion } from "./quat";
+import type { Vector3Data } from "./vec3";
+import { Vector3 } from "./vec3";
 
 // Array of Matrix4 instances. The index * 64 + 131072 is the offset in the memory.
 const privateOffsetArray: (Matrix4 | null)[] = new Array(4096).fill(null);

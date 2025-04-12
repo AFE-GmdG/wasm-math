@@ -8,6 +8,7 @@ export default {
   output: {
     file: "dist/wasm-math.js",
     format: "es",
+    sourcemap: true,
   },
 
   plugins: [

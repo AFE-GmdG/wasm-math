@@ -68,7 +68,6 @@ export default [
       "dist/**/*",
       "eslint.config.js",
       "rollup.config.js",
-      "vitest.config.ts",
     ],
   },
 ];

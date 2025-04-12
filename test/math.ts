@@ -1,12 +1,8 @@
-export {
-  Vector3,
-  Vector3Data,
-  Quaternion,
-  QuaternionData,
-  Matrix4,
-  Matrix4Data,
-  EulerOrder,
-} from "../dist/wasm-math.js";
+import type { Vector3Data, QuaternionData, Matrix4Data } from "../src/wasm-math";
+
+export { Vector3, Quaternion, Matrix4, EulerOrder } from "../src/wasm-math";
+
+export { Vector3Data, QuaternionData, Matrix4Data };
 
 export type VecX1 = {
   v: Vector3Data;

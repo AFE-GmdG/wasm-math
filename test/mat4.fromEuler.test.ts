@@ -19,7 +19,15 @@ function deg2rad(deg: number) {
 }
 
 test.each<TestData>([
-  { rx: 0, ry: 0, rz: 0, eo: EulerOrder.YXZ, m: [0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1] },
+  {
+    rx: 0, ry: 0, rz: 0, eo: EulerOrder.YXZ,
+    m: [
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1,
+    ],
+  },
 ])("Matrix4.createFromEuler (TS) (DEG-Version) ($rx, $ry, $rz) Euler Order: $eo", ({ rx, ry, rz, eo, m }) => {
   console.log(`Matrix4.createFromEuler (TS) (DEG-Version) (${rx}, ${ry}, ${rz}) Euler Order: ${eo}`);
 
@@ -30,7 +38,7 @@ test.each<TestData>([
   using rotation = new Vector3([vx, vy, vz]);
   using result = new Matrix4();
 
-  Matrix4.createFromEuler(rotation, eo, result);
+  Matrix4.createFromEuler_ts(rotation, eo, result);
 
   result.print("Result", 3);
 
