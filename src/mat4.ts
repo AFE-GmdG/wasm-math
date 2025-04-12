@@ -527,7 +527,126 @@ export class Matrix4 implements Disposable {
   }
 
   // TODO: createScale
-  // TODO: createInverse
+
+  /**
+   * Creates a new Matrix4 which is the inverse of the given matrix.
+   *
+   * @param m The matrix to invert.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createInverse(_m: Matrix4, _result = new Matrix4()): Matrix4 {
+    throw new Error("Not implemented: createInverse (wasm Version)");
+  }
+
+  /**
+   * Creates a new Matrix4 which is the inverse of the given matrix.
+   * (Typescript version)
+   *
+   * @param m The matrix to invert.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createInverse_ts(m: Matrix4, result = new Matrix4()): Matrix4 {
+    const [
+      xx, xy, xz, xw,
+      yx, yy, yz, yw,
+      zx, zy, zz, zw,
+      wx, wy, wz, ww,
+    ] = m.get();
+
+    // use some local variables to avoid multiple calculations of the same values
+    const zzww = zz * ww;
+    const zwwz = zw * wz;
+    const zzww_zwwz = zzww - zwwz;
+
+    const zyww = zy * ww;
+    const zwwy = zw * wy;
+    const zyww_zwwy = zyww - zwwy;
+
+    const zywz = zy * wz;
+    const zzwy = zz * wy;
+    const zywz_zzwy = zywz - zzwy;
+
+    const zxww = zx * ww;
+    const zwwx = zw * wx;
+    const zxww_zwwx = zxww - zwwx;
+
+    const zxwz = zx * wz;
+    const zzwx = zz * wx;
+    const zxwz_zzwx = zxwz - zzwx;
+
+    const zxwy = zx * wy;
+    const zywx = zy * wx;
+    const zxwy_zywx = zxwy - zywx;
+
+    const det = xx * (yy * zzww_zwwz - yz * zyww_zwwy + yw * zywz_zzwy)
+      - xy * (yx * zzww_zwwz - yz * zxww_zwwx + yw * zxwz_zzwx)
+      + xz * (yx * zyww_zwwy - yy * zxww_zwwx + yw * zxwy_zywx)
+      - xw * (yx * zywz_zzwy - yy * zxwz_zzwx + yz * zxwy_zywx);
+
+    if (det === 0) {
+      throw new Error("Matrix4: cannot invert matrix with determinant 0");
+    }
+
+    const invDet = 1 / det;
+
+    const xyww = xy * ww;
+    const zwxw = zw * xw;
+    const xyww_zwwy = xyww - zwxw;
+
+    const xywz = xy * wz;
+    const zzxw = zz * xw;
+    const xywz_zzwy = xywz - zzxw;
+
+    const yyww = yy * ww;
+    // const zwwy = zw * wy;
+    const yyww_zwwy = yyww - zwwy;
+
+    const yxww = yx * ww;
+    // const zwwx = zw * wx;
+    const yxww_zwwx = yxww - zwwx;
+
+    const yxwy = yx * wy;
+    const yyxw = yy * xw;
+    const yxwy_yyxw = yxwy - yyxw;
+
+    const yywz = yy * wz;
+    // const zzwy = zz * wy;
+    const yywz_zzwy = yywz - zzwy;
+
+    const yxwz = yx * wz;
+    // const zzwx = zz * wx;
+    const yxwz_zzwx = yxwz - zzwx;
+
+    const rxx = (yy * zzww_zwwz - yz * zyww_zwwy + yw * zywz_zzwy) * invDet;
+    const rxy = -(xy * zzww_zwwz - yz * zxww_zwwx + yw * zxwz_zzwx) * invDet;
+    const rxz = (xy * zyww_zwwy - yy * zxww_zwwx + yw * zxwy_zywx) * invDet;
+    const rxw = -(xy * zywz_zzwy - yy * zxwz_zzwx + yz * zxwy_zywx) * invDet;
+
+    const ryx = -(yx * zzww_zwwz - yz * zxww_zwwx + yw * zxwz_zzwx) * invDet;
+    const ryy = (xx * zzww_zwwz - yz * xyww_zwwy + yw * xywz_zzwy) * invDet;
+    const ryz = -(xx * zyww_zwwy - xy * zxww_zwwx + yw * zxwy_zywx) * invDet;
+    const ryw = (xx * zywz_zzwy - xy * zxwz_zzwx + yz * zxwy_zywx) * invDet;
+
+    const rzx = (yx * zyww_zwwy - yy * zxww_zwwx + yw * zxwy_zywx) * invDet;
+    const rzy = -(xx * zyww_zwwy - xy * zxww_zwwx + yw * zxwy_zywx) * invDet;
+    const rzz = (xx * yyww_zwwy - xy * yxww_zwwx + yz * yxwy_yyxw) * invDet;
+    const rzw = -(xx * yywz_zzwy - xy * yxwz_zzwx + yz * yxwy_yyxw) * invDet;
+
+    const rwx = -(yx * zywz_zzwy - yy * zxwz_zzwx + yz * zxwy_zywx) * invDet;
+    const rwy = (xx * zywz_zzwy - xy * zxwz_zzwx + yz * zxwy_zywx) * invDet;
+    const rwz = -(xx * yywz_zzwy - xy * yxwz_zzwx + yz * yxwy_yyxw) * invDet;
+    const rww = (xx * yywz_zzwy - xy * yxwz_zzwx + yz * yxwy_yyxw) * invDet;
+
+    result.set([
+      rxx, rxy, rxz, rxw,
+      ryx, ryy, ryz, ryw,
+      rzx, rzy, rzz, rzw,
+      rwx, rwy, rwz, rww,
+    ]);
+
+    return result;
+  }
+
   // TODO: createOrthographic
   // TODO: createPerspective
   // TODO: createLookAt
