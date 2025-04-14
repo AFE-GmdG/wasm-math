@@ -3,6 +3,7 @@ import {
   memory,
   mCreateRotQuat,
   mCreateRotQuatData,
+  mCreateInverse,
   mMulMat,
 } from "./math";
 import type { QuaternionData } from "./quat";
@@ -527,7 +528,102 @@ export class Matrix4 implements Disposable {
   }
 
   // TODO: createScale
-  // TODO: createInverse
+
+  /**
+   * Creates a new Matrix4 which is the inverse of the given matrix.
+   *
+   * @param mat The matrix to invert.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createInverse(mat: Matrix4, result?: Matrix4): Matrix4;
+  /**
+   * Creates a new Matrix4 which is the inverse of the given matrix data.
+   *
+   * @param mat The matrix data to invert.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createInverse(mat: Matrix4Data, result?: Matrix4): Matrix4;
+  static createInverse(mat: Matrix4 | Matrix4Data, result = new Matrix4()): Matrix4 {
+    if (mat instanceof Matrix4) {
+      mCreateInverse(mat.#offset, result.#offset);
+      return result;
+    }
+    using ma = new Matrix4(mat, true);
+    mCreateInverse(ma.#offset, result.#offset);
+    return result;
+  }
+
+  /**
+   * Creates a new Matrix4 which is the inverse of the given matrix.
+   * (Typescript version)
+   *
+   * @param mat The matrix to invert.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createInverse_ts(mat: Matrix4, result?: Matrix4): Matrix4;
+  /**
+   * Creates a new Matrix4 which is the inverse of the given matrix data.
+   * (Typescript version)
+   *
+   * @param mat The matrix data to invert.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createInverse_ts(mat: Matrix4Data, result?: Matrix4): Matrix4;
+  static createInverse_ts(mat: Matrix4 | Matrix4Data, result = new Matrix4()): Matrix4 {
+    // cglm implementation: cglm/mat4.h around line 659
+    const [
+      a, b, c, d,
+      e, f, g, h,
+      i, j, k, l,
+      m, n, o, p,
+    ] = mat instanceof Matrix4
+      ? mat.get()
+      : mat;
+
+    const c1 = k * p - l * o;
+    const c2 = c * h - d * g;
+    const c3 = i * p - l * m;
+
+    const c4 = a * h - d * e;
+    const c5 = j * p - l * n;
+    const c6 = b * h - d * f;
+
+    const c7 = i * n - j * m;
+    const c8 = a * f - b * e;
+    const c9 = j * o - k * n;
+
+    const c10 = b * g - c * f;
+    const c11 = i * o - k * m;
+    const c12 = a * g - c * e;
+
+    const idt = 1.0 / (c8 * c1 + c4 * c9 + c10 * c3 + c2 * c7 - c12 * c5 - c6 * c11);
+    const ndt = -idt;
+
+    result.set([
+      (f * c1 - g * c5 + h * c9) * idt,
+      (b * c1 - c * c5 + d * c9) * ndt,
+      (n * c2 - o * c6 + p * c10) * idt,
+      (j * c2 - k * c6 + l * c10) * ndt,
+
+      (e * c1 - g * c3 + h * c11) * ndt,
+      (a * c1 - c * c3 + d * c11) * idt,
+      (m * c2 - o * c4 + p * c12) * ndt,
+      (i * c2 - k * c4 + l * c12) * idt,
+
+      (e * c5 - f * c3 + h * c7) * idt,
+      (a * c5 - b * c3 + d * c7) * ndt,
+      (m * c6 - n * c4 + p * c8) * idt,
+      (i * c6 - j * c4 + l * c8) * ndt,
+
+      (e * c9 - f * c11 + g * c7) * ndt,
+      (a * c9 - b * c11 + c * c7) * idt,
+      (m * c10 - n * c12 + o * c8) * ndt,
+      (i * c10 - j * c12 + k * c8) * idt,
+    ]);
+
+    return result;
+  }
+
   // TODO: createOrthographic
   // TODO: createPerspective
   // TODO: createLookAt
