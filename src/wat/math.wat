@@ -529,6 +529,567 @@
     v128.store                    ;; S -
   )
 
+  (func $mCreateInverse (export "mCreateInverse") (type $offsetX2) (param $offsetMat i32) (param $offsetResult i32)
+    ;; Create the inverse of the given matrix.
+
+    ;; This is an unoptimized 1 to 1 conversion of the algorithm in TypeScript.
+    ;; Since the local access to the matrix is all over the place for each
+    ;; calculation, a more optimized version with SIMD instructions might be
+    ;; difficult to implement. I try to optimize the code later.
+
+    ;; const [
+    ;;   a, b, c, d,
+    ;;   e, f, g, h,
+    ;;   i, j, k, l,
+    ;;   m, n, o, p,
+    ;; ] = mat;
+    ;; I do not use 4 v128 variables to read the matrix.
+    ;; For each of the following computations of c1 to c12 I need always
+    ;; data from two different columns, the copying of a v128 variable to only
+    ;; access one value of it might be inefficient.
+    ;; I try to access the data by using $offsetMat and adding the field offset
+    ;; directly.
+
+    ;; local variables:
+    (local $a f32)
+    (local $b f32)
+    (local $c f32)
+    (local $d f32)
+    (local $e f32)
+    (local $f f32)
+    (local $g f32)
+    (local $h f32)
+    (local $i f32)
+    (local $j f32)
+    (local $k f32)
+    (local $l f32)
+    (local $m f32)
+    (local $n f32)
+    (local $o f32)
+    (local $p f32)
+
+    (local $c1 f32)
+    (local $c2 f32)
+    (local $c3 f32)
+    (local $c4 f32)
+    (local $c5 f32)
+    (local $c6 f32)
+    (local $c7 f32)
+    (local $c8 f32)
+    (local $c9 f32)
+    (local $c10 f32)
+    (local $c11 f32)
+    (local $c12 f32)
+
+    (local $idt f32)
+    (local $ndt f32)
+
+    ;; Read in the matrix a to p
+    local.get $offsetMat       ;; S offsetMat
+    f32.load                   ;; S a
+    local.set $a               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 4                ;; S offsetMat, 4
+    i32.add                    ;; S offsetMat + 4
+    f32.load                   ;; S b
+    local.set $b               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 8                ;; S offsetMat, 8
+    i32.add                    ;; S offsetMat + 8
+    f32.load                   ;; S c
+    local.set $c               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 12               ;; S offsetMat, 12
+    i32.add                    ;; S offsetMat + 12
+    f32.load                   ;; S d
+    local.set $d               ;; S -
+
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 16               ;; S offsetMat, 16
+    i32.add                    ;; S offsetMat + 16
+    f32.load                   ;; S e
+    local.set $e               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 20               ;; S offsetMat, 20
+    i32.add                    ;; S offsetMat + 20
+    f32.load                   ;; S f
+    local.set $f               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 24               ;; S offsetMat, 24
+    i32.add                    ;; S offsetMat + 24
+    f32.load                   ;; S g
+    local.set $g               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 28               ;; S offsetMat, 28
+    i32.add                    ;; S offsetMat + 28
+    f32.load                   ;; S h
+    local.set $h               ;; S -
+
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 32               ;; S offsetMat, 32
+    i32.add                    ;; S offsetMat + 32
+    f32.load                   ;; S i
+    local.set $i               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 36               ;; S offsetMat, 36
+    i32.add                    ;; S offsetMat + 36
+    f32.load                   ;; S j
+    local.set $j               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 40               ;; S offsetMat, 40
+    i32.add                    ;; S offsetMat + 40
+    f32.load                   ;; S k
+    local.set $k               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 44               ;; S offsetMat, 44
+    i32.add                    ;; S offsetMat + 44
+    f32.load                   ;; S l
+    local.set $l               ;; S -
+
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 48               ;; S offsetMat, 48
+    i32.add                    ;; S offsetMat + 48
+    f32.load                   ;; S m
+    local.set $m               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 52               ;; S offsetMat, 52
+    i32.add                    ;; S offsetMat + 52
+    f32.load                   ;; S n
+    local.set $n               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 56               ;; S offsetMat, 56
+    i32.add                    ;; S offsetMat + 56
+    f32.load                   ;; S o
+    local.set $o               ;; S -
+    local.get $offsetMat       ;; S offsetMat
+    i32.const 60               ;; S offsetMat, 60
+    i32.add                    ;; S offsetMat + 60
+    f32.load                   ;; S p
+    local.set $p               ;; S -
+
+    ;; const c1 = k * p - l * o;
+    local.get $k               ;; S k
+    local.get $p               ;; S k, p
+    f32.mul                    ;; S k * p
+    local.get $l               ;; S k * p, l
+    local.get $o               ;; S k * p, l, o
+    f32.mul                    ;; S k * p, l * o
+    f32.sub                    ;; S k * p - l * o
+    local.set $c1              ;; S -
+
+    ;; const c2 = c * h - d * g;
+    local.get $c               ;; S c
+    local.get $h               ;; S c, h
+    f32.mul                    ;; S c * h
+    local.get $d               ;; S c * h, d
+    local.get $g               ;; S c * h, d, g
+    f32.mul                    ;; S c * h, d * g
+    f32.sub                    ;; S c * h - d * g
+    local.set $c2              ;; S -
+
+    ;; const c3 = i * p - l * m;
+    local.get $i               ;; S i
+    local.get $p               ;; S i, p
+    f32.mul                    ;; S i * p
+    local.get $l               ;; S i * p, l
+    local.get $m               ;; S i * p, l, m
+    f32.mul                    ;; S i * p, l * m
+    f32.sub                    ;; S i * p - l * m
+    local.set $c3              ;; S -
+
+    ;; const c4 = a * h - d * e;
+    local.get $a               ;; S a
+    local.get $h               ;; S a, h
+    f32.mul                    ;; S a * h
+    local.get $d               ;; S a * h, d
+    local.get $e               ;; S a * h, d, e
+    f32.mul                    ;; S a * h, d * e
+    f32.sub                    ;; S a * h - d * e
+    local.set $c4              ;; S -
+
+    ;; const c5 = j * p - l * n;
+    local.get $j               ;; S j
+    local.get $p               ;; S j, p
+    f32.mul                    ;; S j * p
+    local.get $l               ;; S j * p, l
+    local.get $n               ;; S j * p, l, n
+    f32.mul                    ;; S j * p, l * n
+    f32.sub                    ;; S j * p - l * n
+    local.set $c5              ;; S -
+
+    ;; const c6 = b * h - d * f;
+    local.get $b               ;; S b
+    local.get $h               ;; S b, h
+    f32.mul                    ;; S b * h
+    local.get $d               ;; S b * h, d
+    local.get $f               ;; S b * h, d, f
+    f32.mul                    ;; S b * h, d * f
+    f32.sub                    ;; S b * h - d * f
+    local.set $c6              ;; S -
+
+    ;; const c7 = i * n - j * m;
+    local.get $i               ;; S i
+    local.get $n               ;; S i, n
+    f32.mul                    ;; S i * n
+    local.get $j               ;; S i * n, j
+    local.get $m               ;; S i * n, j, m
+    f32.mul                    ;; S i * n, j * m
+    f32.sub                    ;; S i * n - j * m
+    local.set $c7              ;; S -
+
+    ;; const c8 = a * f - b * e;
+    local.get $a               ;; S a
+    local.get $f               ;; S a, f
+    f32.mul                    ;; S a * f
+    local.get $b               ;; S a * f, b
+    local.get $e               ;; S a * f, b, e
+    f32.mul                    ;; S a * f, b * e
+    f32.sub                    ;; S a * f - b * e
+    local.set $c8              ;; S -
+
+    ;; const c9 = j * o - k * n;
+    local.get $j               ;; S j
+    local.get $o               ;; S j, o
+    f32.mul                    ;; S j * o
+    local.get $k               ;; S j * o, k
+    local.get $n               ;; S j * o, k, n
+    f32.mul                    ;; S j * o, k * n
+    f32.sub                    ;; S j * o - k * n
+    local.set $c9              ;; S -
+
+    ;; const c10 = b * g - c * f;
+    local.get $b               ;; S b
+    local.get $g               ;; S b, g
+    f32.mul                    ;; S b * g
+    local.get $c               ;; S b * g, c
+    local.get $f               ;; S b * g, c, f
+    f32.mul                    ;; S b * g, c * f
+    f32.sub                    ;; S b * g - c * f
+    local.set $c10             ;; S -
+
+    ;; const c11 = i * o - k * m;
+    local.get $i               ;; S i
+    local.get $o               ;; S i, o
+    f32.mul                    ;; S i * o
+    local.get $k               ;; S i * o, k
+    local.get $m               ;; S i * o, k, m
+    f32.mul                    ;; S i * o, k * m
+    f32.sub                    ;; S i * o - k * m
+    local.set $c11             ;; S -
+
+    ;; const c12 = a * g - c * e;
+    local.get $a               ;; S a
+    local.get $g               ;; S a, g
+    f32.mul                    ;; S a * g
+    local.get $c               ;; S a * g, c
+    local.get $e               ;; S a * g, c, e
+    f32.mul                    ;; S a * g, c * e
+    f32.sub                    ;; S a * g - c * e
+    local.set $c12             ;; S -
+
+    ;; const idt = 1.0 / (c8 * c1 + c4 * c9 + c10 * c3 + c2 * c7 - c12 * c5 - c6 * c11);
+    ;; const ndt = -idt;
+    f32.const 1.0              ;; S 1.0
+    local.get $c8              ;; S 1.0, c8
+    local.get $c1              ;; S 1.0, c8, c1
+    f32.mul                    ;; S 1.0, (c8 * c1)
+    local.get $c4              ;; S 1.0, (c8 * c1), c4
+    local.get $c9              ;; S 1.0, (c8 * c1), c4, c9
+    f32.mul                    ;; S 1.0, (c8 * c1), (c4 * c9)
+    f32.add                    ;; S 1.0, (...)
+    local.get $c10             ;; S 1.0, (...), c10
+    local.get $c3              ;; S 1.0, (...), c10, c3
+    f32.mul                    ;; S 1.0, (...), (c10 * c3)
+    f32.add                    ;; S 1.0, (...)
+    local.get $c2              ;; S 1.0, (...), c2
+    local.get $c7              ;; S 1.0, (...), c2, c7
+    f32.mul                    ;; S 1.0, (...), (c2 * c7)
+    f32.add                    ;; S 1.0, (...)
+    local.get $c12             ;; S 1.0, (...), c12
+    local.get $c5              ;; S 1.0, (...), c12, c5
+    f32.mul                    ;; S 1.0, (...), (c12 * c5)
+    f32.sub                    ;; S 1.0, (...)
+    local.get $c6              ;; S 1.0, (...), c6
+    local.get $c11             ;; S 1.0, (...), c6, c11
+    f32.mul                    ;; S 1.0, (...), (c6 * c11)
+    f32.sub                    ;; S 1.0, (...)
+    f32.div                    ;; S idt
+    local.tee $idt             ;; S idt
+    f32.neg                    ;; S -idt
+    local.set $ndt             ;; S -
+
+    ;; result.set([
+    ;;   (f * c1 - g * c5 + h * c9) * idt,
+    local.get $offsetResult    ;; S oR
+    local.get $f               ;; S oR, f
+    local.get $c1              ;; S oR, f, c1
+    f32.mul                    ;; S oR, f * c1
+    local.get $g               ;; S oR, f * c1, g
+    local.get $c5              ;; S oR, f * c1, g, c5
+    f32.mul                    ;; S oR, f * c1, g * c5
+    f32.sub                    ;; S oR, f * c1 - g * c5
+    local.get $h               ;; S oR, f * c1 - g * c5, h
+    local.get $c9              ;; S oR, f * c1 - g * c5, h, c9
+    f32.mul                    ;; S oR, f * c1 - g * c5, h * c9
+    f32.add                    ;; S oR, (f * c1 - g * c5 + h * c9)
+    local.get $idt             ;; S oR, (f * c1 - g * c5 + h * c9), idt
+    f32.mul                    ;; S oR, (f * c1 - g * c5 + h * c9) * idt
+    f32x4.splat                ;; S oR, (r00, r00, r00, r00)
+
+    ;; (b * c1 - c * c5 + d * c9) * ndt,
+    local.get $b               ;; S oR, (r00, r00, r00, r00), b
+    local.get $c1              ;; S oR, (r00, r00, r00, r00), b, c1
+    f32.mul                    ;; S oR, (r00, r00, r00, r00), b * c1
+    local.get $c               ;; S oR, (r00, r00, r00, r00), b * c1, c
+    local.get $c5              ;; S oR, (r00, r00, r00, r00), b * c1, c, c5
+    f32.mul                    ;; S oR, (r00, r00, r00, r00), b * c1, c * c5
+    f32.sub                    ;; S oR, (r00, r00, r00, r00), (b * c1 - c * c5)
+    local.get $d               ;; S oR, (r00, r00, r00, r00), (b * c1 - c * c5), d
+    local.get $c9              ;; S oR, (r00, r00, r00, r00), (b * c1 - c * c5), d, c9
+    f32.mul                    ;; S oR, (r00, r00, r00, r00), (b * c1 - c * c5), d * c9
+    f32.add                    ;; S oR, (r00, r00, r00, r00), (b * c1 - c * c5 + d * c9)
+    local.get $ndt             ;; S oR, (r00, r00, r00, r00), (b * c1 - c * c5 + d * c9), ndt
+    f32.mul                    ;; S oR, (r00, r00, r00, r00), (b * c1 - c * c5 + d * c9) * ndt
+    f32x4.replace_lane 1       ;; S oR, (r00, r01, r00, r00)
+
+    ;; (n * c2 - o * c6 + p * c10) * idt,
+    local.get $n               ;; S oR, (r00, r01, r00, r00), n
+    local.get $c2              ;; S oR, (r00, r01, r00, r00), n, c2
+    f32.mul                    ;; S oR, (r00, r01, r00, r00), n * c2
+    local.get $o               ;; S oR, (r00, r01, r00, r00), n * c2, o
+    local.get $c6              ;; S oR, (r00, r01, r00, r00), n * c2, o, c6
+    f32.mul                    ;; S oR, (r00, r01, r00, r00), n * c2, o * c6
+    f32.sub                    ;; S oR, (r00, r01, r00, r00), (n * c2 - o * c6)
+    local.get $p               ;; S oR, (r00, r01, r00, r00), (n * c2 - o * c6), p
+    local.get $c10             ;; S oR, (r00, r01, r00, r00), (n * c2 - o * c6), p, c10
+    f32.mul                    ;; S oR, (r00, r01, r00, r00), (n * c2 - o * c6), p * c10
+    f32.add                    ;; S oR, (r00, r01, r00, r00), (n * c2 - o * c6 + p * c10)
+    local.get $idt             ;; S oR, (r00, r01, r00, r00), (n * c2 - o * c6 + p * c10), idt
+    f32.mul                    ;; S oR, (r00, r01, r00, r00), (n * c2 - o * c6 + p * c10) * idt
+    f32x4.replace_lane 2       ;; S oR, (r00, r01, r02, r00)
+
+    ;; (j * c2 - k * c6 + l * c10) * ndt,
+    local.get $j               ;; S oR, (r00, r01, r02, r00), j
+    local.get $c2              ;; S oR, (r00, r01, r02, r00), j, c2
+    f32.mul                    ;; S oR, (r00, r01, r02, r00), j * c2
+    local.get $k               ;; S oR, (r00, r01, r02, r00), j * c2, k
+    local.get $c6              ;; S oR, (r00, r01, r02, r00), j * c2, k, c6
+    f32.mul                    ;; S oR, (r00, r01, r02, r00), j * c2, k * c6
+    f32.sub                    ;; S oR, (r00, r01, r02, r00), (j * c2 - k * c6)
+    local.get $l               ;; S oR, (r00, r01, r02, r00), (j * c2 - k * c6), l
+    local.get $c10             ;; S oR, (r00, r01, r02, r00), (j * c2 - k * c6), l, c10
+    f32.mul                    ;; S oR, (r00, r01, r02, r00), (j * c2 - k * c6), l * c10
+    f32.add                    ;; S oR, (r00, r01, r02, r00), (j * c2 - k * c6 + l * c10)
+    local.get $ndt             ;; S oR, (r00, r01, r02, r00), (j * c2 - k * c6 + l * c10), ndt
+    f32.mul                    ;; S oR, (r00, r01, r02, r00), (j * c2 - k * c6 + l * c10) * ndt
+    f32x4.replace_lane 3       ;; S oR, (r00, r01, r02, r03)
+    v128.store                 ;; S -
+
+    ;; (e * c1 - g * c3 + h * c11) * ndt,
+    local.get $offsetResult    ;; S oR
+    i32.const 16               ;; S oR, 16
+    i32.add                    ;; S (oR + 16)
+    local.get $e               ;; S (oR + 16), e
+    local.get $c1              ;; S (oR + 16), e, c1
+    f32.mul                    ;; S (oR + 16), e * c1
+    local.get $g               ;; S (oR + 16), e * c1, g
+    local.get $c3              ;; S (oR + 16), e * c1, g, c3
+    f32.mul                    ;; S (oR + 16), e * c1, g * c3
+    f32.sub                    ;; S (oR + 16), (e * c1 - g * c3)
+    local.get $h               ;; S (oR + 16), (e * c1 - g * c3), h
+    local.get $c11             ;; S (oR + 16), (e * c1 - g * c3), h, c11
+    f32.mul                    ;; S (oR + 16), (e * c1 - g * c3), h * c11
+    f32.add                    ;; S (oR + 16), (e * c1 - g * c3 + h * c11)
+    local.get $ndt             ;; S (oR + 16), (e * c1 - g * c3 + h * c11), ndt
+    f32.mul                    ;; S (oR + 16), (e * c1 - g * c3 + h * c11) * ndt
+    f32x4.splat                ;; S (oR + 16), (r10, r10, r10, r10)
+
+    ;; (a * c1 - c * c3 + d * c11) * idt,
+    local.get $a               ;; S (oR + 16), (r10, r10, r10, r10), a
+    local.get $c1              ;; S (oR + 16), (r10, r10, r10, r10), a, c1
+    f32.mul                    ;; S (oR + 16), (r10, r10, r10, r10), a * c1
+    local.get $c               ;; S (oR + 16), (r10, r10, r10, r10), a * c1, c
+    local.get $c3              ;; S (oR + 16), (r10, r10, r10, r10), a * c1, c, c3
+    f32.mul                    ;; S (oR + 16), (r10, r10, r10, r10), a * c1, c * c3
+    f32.sub                    ;; S (oR + 16), (r10, r10, r10, r10), (a * c1 - c * c3)
+    local.get $d               ;; S (oR + 16), (r10, r10, r10, r10), (a * c1 - c * c3), d
+    local.get $c11             ;; S (oR + 16), (r10, r10, r10, r10), (a * c1 - c * c3), d, c11
+    f32.mul                    ;; S (oR + 16), (r10, r10, r10, r10), (a * c1 - c * c3), d * c11
+    f32.add                    ;; S (oR + 16), (r10, r10, r10, r10), (a * c1 - c * c3 + d * c11)
+    local.get $idt             ;; S (oR + 16), (r10, r10, r10, r10), (a * c1 - c * c3 + d * c11), idt
+    f32.mul                    ;; S (oR + 16), (r10, r10, r10, r10), (a * c1 - c * c3 + d * c11) * idt
+    f32x4.replace_lane 1       ;; S (oR + 16), (r10, r11, r10, r10)
+
+    ;; (m * c2 - o * c4 + p * c12) * ndt,
+    local.get $m               ;; S (oR + 16), (r10, r11, r10, r10), m
+    local.get $c2              ;; S (oR + 16), (r10, r11, r10, r10), m, c2
+    f32.mul                    ;; S (oR + 16), (r10, r11, r10, r10), m * c2
+    local.get $o               ;; S (oR + 16), (r10, r11, r10, r10), m * c2, o
+    local.get $c4              ;; S (oR + 16), (r10, r11, r10, r10), m * c2, o, c4
+    f32.mul                    ;; S (oR + 16), (r10, r11, r10, r10), m * c2, o * c4
+    f32.sub                    ;; S (oR + 16), (r10, r11, r10, r10), (m * c2 - o * c4)
+    local.get $p               ;; S (oR + 16), (r10, r11, r10, r10), (m * c2 - o * c4), p
+    local.get $c12             ;; S (oR + 16), (r10, r11, r10, r10), (m * c2 - o * c4), p, c12
+    f32.mul                    ;; S (oR + 16), (r10, r11, r10, r10), (m * c2 - o * c4), p * c12
+    f32.add                    ;; S (oR + 16), (r10, r11, r10, r10), (m * c2 - o * c4 + p * c12)
+    local.get $ndt             ;; S (oR + 16), (r10, r11, r10, r10), (m * c2 - o * c4 + p * c12), ndt
+    f32.mul                    ;; S (oR + 16), (r10, r11, r10, r10), (m * c2 - o * c4 + p * c12) * ndt
+    f32x4.replace_lane 2       ;; S (oR + 16), (r10, r11, r12, r10)
+
+    ;; (i * c2 - k * c4 + l * c12) * idt,
+    local.get $i               ;; S (oR + 16), (r10, r11, r12, r10), i
+    local.get $c2              ;; S (oR + 16), (r10, r11, r12, r10), i, c2
+    f32.mul                    ;; S (oR + 16), (r10, r11, r12, r10), i * c2
+    local.get $k               ;; S (oR + 16), (r10, r11, r12, r10), i * c2, k
+    local.get $c4              ;; S (oR + 16), (r10, r11, r12, r10), i * c2, k, c4
+    f32.mul                    ;; S (oR + 16), (r10, r11, r12, r10), i * c2, k * c4
+    f32.sub                    ;; S (oR + 16), (r10, r11, r12, r10), (i * c2 - k * c4)
+    local.get $l               ;; S (oR + 16), (r10, r11, r12, r10), (i * c2 - k * c4), l
+    local.get $c12             ;; S (oR + 16), (r10, r11, r12, r10), (i * c2 - k * c4), l, c12
+    f32.mul                    ;; S (oR + 16), (r10, r11, r12, r10), (i * c2 - k * c4), l * c12
+    f32.add                    ;; S (oR + 16), (r10, r11, r12, r10), (i * c2 - k * c4 + l * c12)
+    local.get $idt             ;; S (oR + 16), (r10, r11, r12, r10), (i * c2 - k * c4 + l * c12), idt
+    f32.mul                    ;; S (oR + 16), (r10, r11, r12, r10), (i * c2 - k * c4 + l * c12) * idt
+    f32x4.replace_lane 3       ;; S (oR + 16), (r10, r11, r12, r13)
+    v128.store                 ;; S -
+
+    ;; (e * c5 - f * c3 + h * c7) * idt,
+    local.get $offsetResult    ;; S oR
+    i32.const 32               ;; S oR, 32
+    i32.add                    ;; S (oR + 32)
+    local.get $e               ;; S (oR + 32), e
+    local.get $c5              ;; S (oR + 32), e, c5
+    f32.mul                    ;; S (oR + 32), e * c5
+    local.get $f               ;; S (oR + 32), e * c5, f
+    local.get $c3              ;; S (oR + 32), e * c5, f, c3
+    f32.mul                    ;; S (oR + 32), e * c5, f * c3
+    f32.sub                    ;; S (oR + 32), (e * c5 - f * c3)
+    local.get $h               ;; S (oR + 32), (e * c5 - f * c3), h
+    local.get $c7              ;; S (oR + 32), (e * c5 - f * c3), h, c7
+    f32.mul                    ;; S (oR + 32), (e * c5 - f * c3), h * c7
+    f32.add                    ;; S (oR + 32), (e * c5 - f * c3 + h * c7)
+    local.get $idt             ;; S (oR + 32), (e * c5 - f * c3 + h * c7), idt
+    f32.mul                    ;; S (oR + 32), (e * c5 - f * c3 + h * c7) * idt
+    f32x4.splat                ;; S (oR + 32), (r20, r20, r20, r20)
+
+    ;; (a * c5 - b * c3 + d * c7) * ndt,
+    local.get $a               ;; S (oR + 32), (r20, r20, r20, r20), a
+    local.get $c5              ;; S (oR + 32), (r20, r20, r20, r20), a, c5
+    f32.mul                    ;; S (oR + 32), (r20, r20, r20, r20), a * c5
+    local.get $b               ;; S (oR + 32), (r20, r20, r20, r20), a * c5, b
+    local.get $c3              ;; S (oR + 32), (r20, r20, r20, r20), a * c5, b, c3
+    f32.mul                    ;; S (oR + 32), (r20, r20, r20, r20), a * c5, b * c3
+    f32.sub                    ;; S (oR + 32), (r20, r20, r20, r20), (a * c5 - b * c3)
+    local.get $d               ;; S (oR + 32), (r20, r20, r20, r20), (a * c5 - b * c3), d
+    local.get $c7              ;; S (oR + 32), (r20, r20, r20, r20), (a * c5 - b * c3), d, c7
+    f32.mul                    ;; S (oR + 32), (r20, r20, r20, r20), (a * c5 - b * c3), d * c7
+    f32.add                    ;; S (oR + 32), (r20, r20, r20, r20), (a * c5 - b * c3 + d * c7)
+    local.get $ndt             ;; S (oR + 32), (r20, r20, r20, r20), (a * c5 - b * c3 + d * c7), ndt
+    f32.mul                    ;; S (oR + 32), (r20, r20, r20, r20), (a * c5 - b * c3 + d * c7) * ndt
+    f32x4.replace_lane 1       ;; S (oR + 32), (r20, r21, r20, r20)
+
+    ;; (m * c6 - n * c4 + p * c8) * idt,
+    local.get $m               ;; S (oR + 32), (r20, r21, r20, r20), m
+    local.get $c6              ;; S (oR + 32), (r20, r21, r20, r20), m, c6
+    f32.mul                    ;; S (oR + 32), (r20, r21, r20, r20), m * c6
+    local.get $n               ;; S (oR + 32), (r20, r21, r20, r20), m * c6, n
+    local.get $c4              ;; S (oR + 32), (r20, r21, r20, r20), m * c6, n, c4
+    f32.mul                    ;; S (oR + 32), (r20, r21, r20, r20), m * c6, n * c4
+    f32.sub                    ;; S (oR + 32), (r20, r21, r20, r20), (m * c6 - n * c4)
+    local.get $p               ;; S (oR + 32), (r20, r21, r20, r20), (m * c6 - n * c4), p
+    local.get $c8              ;; S (oR + 32), (r20, r21, r20, r20), (m * c6 - n * c4), p, c8
+    f32.mul                    ;; S (oR + 32), (r20, r21, r20, r20), (m * c6 - n * c4), p * c8
+    f32.add                    ;; S (oR + 32), (r20, r21, r20, r20), (m * c6 - n * c4 + p * c8)
+    local.get $idt             ;; S (oR + 32), (r20, r21, r20, r20), (m * c6 - n * c4 + p * c8), idt
+    f32.mul                    ;; S (oR + 32), (r20, r21, r20, r20), (m * c6 - n * c4 + p * c8) * idt
+    f32x4.replace_lane 2       ;; S (oR + 32), (r20, r21, r22, r20)
+
+    ;; (i * c6 - j * c4 + l * c8) * ndt,
+    local.get $i               ;; S (oR + 32), (r20, r21, r22, r20), i
+    local.get $c6              ;; S (oR + 32), (r20, r21, r22, r20), i, c6
+    f32.mul                    ;; S (oR + 32), (r20, r21, r22, r20), i * c6
+    local.get $j               ;; S (oR + 32), (r20, r21, r22, r20), i * c6, j
+    local.get $c4              ;; S (oR + 32), (r20, r21, r22, r20), i * c6, j, c4
+    f32.mul                    ;; S (oR + 32), (r20, r21, r22, r20), i * c6, j * c4
+    f32.sub                    ;; S (oR + 32), (r20, r21, r22, r20), (i * c6 - j * c4)
+    local.get $l               ;; S (oR + 32), (r20, r21, r22, r20), (i * c6 - j * c4), l
+    local.get $c8              ;; S (oR + 32), (r20, r21, r22, r20), (i * c6 - j * c4), l, c8
+    f32.mul                    ;; S (oR + 32), (r20, r21, r22, r20), (i * c6 - j * c4), l * c8
+    f32.add                    ;; S (oR + 32), (r20, r21, r22, r20), (i * c6 - j * c4 + l * c8)
+    local.get $ndt             ;; S (oR + 32), (r20, r21, r22, r20), (i * c6 - j * c4 + l * c8), ndt
+    f32.mul                    ;; S (oR + 32), (r20, r21, r22, r20), (i * c6 - j * c4 + l * c8) * ndt
+    f32x4.replace_lane 3       ;; S (oR + 32), (r20, r21, r22, r23)
+    v128.store                 ;; S -
+
+    ;; (e * c9 - f * c11 + g * c7) * ndt,
+    local.get $offsetResult    ;; S oR
+    i32.const 48               ;; S oR, 48
+    i32.add                    ;; S (oR + 48)
+    local.get $e               ;; S (oR + 48), e
+    local.get $c9              ;; S (oR + 48), e, c9
+    f32.mul                    ;; S (oR + 48), e * c9
+    local.get $f               ;; S (oR + 48), e * c9, f
+    local.get $c11             ;; S (oR + 48), e * c9, f, c11
+    f32.mul                    ;; S (oR + 48), e * c9, f * c11
+    f32.sub                    ;; S (oR + 48), (e * c9 - f * c11)
+    local.get $g               ;; S (oR + 48), (e * c9 - f * c11), g
+    local.get $c7              ;; S (oR + 48), (e * c9 - f * c11), g, c7
+    f32.mul                    ;; S (oR + 48), (e * c9 - f * c11), g * c7
+    f32.add                    ;; S (oR + 48), (e * c9 - f * c11 + g * c7)
+    local.get $ndt             ;; S (oR + 48), (e * c9 - f * c11 + g * c7), ndt
+    f32.mul                    ;; S (oR + 48), (e * c9 - f * c11 + g * c7) * ndt
+    f32x4.splat                ;; S (oR + 48), (r30, r30, r30, r30)
+
+    ;; (a * c9 - b * c11 + c * c7) * idt,
+    local.get $a               ;; S (oR + 48), (r30, r30, r30, r30), a
+    local.get $c9              ;; S (oR + 48), (r30, r30, r30, r30), a, c9
+    f32.mul                    ;; S (oR + 48), (r30, r30, r30, r30), a * c9
+    local.get $b               ;; S (oR + 48), (r30, r30, r30, r30), a * c9, b
+    local.get $c11             ;; S (oR + 48), (r30, r30, r30, r30), a * c9, b, c11
+    f32.mul                    ;; S (oR + 48), (r30, r30, r30, r30), a * c9, b * c11
+    f32.sub                    ;; S (oR + 48), (r30, r30, r30, r30), (a * c9 - b * c11)
+    local.get $c               ;; S (oR + 48), (r30, r30, r30, r30), (a * c9 - b * c11), c
+    local.get $c7              ;; S (oR + 48), (r30, r30, r30, r30), (a * c9 - b * c11), c, c7
+    f32.mul                    ;; S (oR + 48), (r30, r30, r30, r30), (a * c9 - b * c11), c * c7
+    f32.add                    ;; S (oR + 48), (r30, r30, r30, r30), (a * c9 - b * c11 + c * c7)
+    local.get $idt             ;; S (oR + 48), (r30, r30, r30, r30), (a * c9 - b * c11 + c * c7), idt
+    f32.mul                    ;; S (oR + 48), (r30, r30, r30, r30), (a * c9 - b * c11 + c * c7) * idt
+    f32x4.replace_lane 1       ;; S (oR + 48), (r30, r31, r30, r30)
+
+    ;; (m * c10 - n * c12 + o * c8) * ndt,
+    local.get $m               ;; S (oR + 48), (r30, r31, r30, r30), m
+    local.get $c10             ;; S (oR + 48), (r30, r31, r30, r30), m, c10
+    f32.mul                    ;; S (oR + 48), (r30, r31, r30, r30), m * c10
+    local.get $n               ;; S (oR + 48), (r30, r31, r30, r30), m * c10, n
+    local.get $c12             ;; S (oR + 48), (r30, r31, r30, r30), m * c10, n, c12
+    f32.mul                    ;; S (oR + 48), (r30, r31, r30, r30), m * c10, n * c12
+    f32.sub                    ;; S (oR + 48), (r30, r31, r30, r30), (m * c10 - n * c12)
+    local.get $o               ;; S (oR + 48), (r30, r31, r30, r30), (m * c10 - n * c12), o
+    local.get $c8              ;; S (oR + 48), (r30, r31, r30, r30), (m * c10 - n * c12), o, c8
+    f32.mul                    ;; S (oR + 48), (r30, r31, r30, r30), (m * c10 - n * c12), o * c8
+    f32.add                    ;; S (oR + 48), (r30, r31, r30, r30), (m * c10 - n * c12 + o * c8)
+    local.get $ndt             ;; S (oR + 48), (r30, r31, r30, r30), (m * c10 - n * c12 + o * c8), ndt
+    f32.mul                    ;; S (oR + 48), (r30, r31, r30, r30), (m * c10 - n * c12 + o * c8) * ndt
+    f32x4.replace_lane 2       ;; S (oR + 48), (r30, r31, r32, r30)
+
+    ;; (i * c10 - j * c12 + k * c8) * idt,
+    local.get $i               ;; S (oR + 48), (r30, r31, r32, r30), i
+    local.get $c10             ;; S (oR + 48), (r30, r31, r32, r30), i, c10
+    f32.mul                    ;; S (oR + 48), (r30, r31, r32, r30), i * c10
+    local.get $j               ;; S (oR + 48), (r30, r31, r32, r30), i * c10, j
+    local.get $c12             ;; S (oR + 48), (r30, r31, r32, r30), i * c10, j, c12
+    f32.mul                    ;; S (oR + 48), (r30, r31, r32, r30), i * c10, j * c12
+    f32.sub                    ;; S (oR + 48), (r30, r31, r32, r30), (i * c10 - j * c12)
+    local.get $k               ;; S (oR + 48), (r30, r31, r32, r30), (i * c10 - j * c12), k
+    local.get $c8              ;; S (oR + 48), (r30, r31, r32, r30), (i * c10 - j * c12), k, c8
+    f32.mul                    ;; S (oR + 48), (r30, r31, r32, r30), (i * c10 - j * c12), k * c8
+    f32.add                    ;; S (oR + 48), (r30, r31, r32, r30), (i * c10 - j * c12 + k * c8)
+    local.get $idt             ;; S (oR + 48), (r30, r31, r32, r30), (i * c10 - j * c12 + k * c8), idt
+    f32.mul                    ;; S (oR + 48), (r30, r31, r32, r30), (i * c10 - j * c12 + k * c8) * idt
+    f32x4.replace_lane 3       ;; S (oR + 48), (r30, r31, r32, r33)
+    v128.store                 ;; S -
+  )
+
   (func $mMulMat (export "mMulMat") (type $offsetX3) (param $offsetA i32) (param $offsetB i32) (param $offsetResult i32)
     (local $aCol0 v128)
     (local $aCol1 v128)

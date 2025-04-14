@@ -133,6 +133,14 @@ interface MathWasm {
   mCreateRotQuatData(x: number, y: number, z: number, w: number, offsetResult: number): void;
 
   /**
+   * Creates an inverted matrix.
+   *
+   * @param offsetMat MemoryOffset of the matrix to invert.
+   * @param offsetResult MemoryOffset of the result matrix.
+   */
+  mCreateInverse(offsetMat: number, offsetResult: number): void;
+
+  /**
    * Multiplies two matrices.
    *
    * @param offsetA MemoryOffset of the first matrix.
