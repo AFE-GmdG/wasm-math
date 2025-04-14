@@ -23,7 +23,7 @@
   - createRotation (Quaternion) (WASM & TS, wasm is slightly slower becaue of imporing `Math.acos` from JavaScript)
   - *TODO*: createFromEuler with EulerOrder and a useful default
   - *TODO*: createScale
-  - *TODO*: createInverse
+  - createInverse (WASM & TS) (WASM is 1.55 times faster, needs more optimization)
   - *TODO*: createOrthographic
   - *TODO*: createPerspective
   - *TODO*: createLookAt

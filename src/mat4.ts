@@ -3,6 +3,7 @@ import {
   memory,
   mCreateRotQuat,
   mCreateRotQuatData,
+  mCreateInverse,
   mMulMat,
 } from "./math";
 import type { QuaternionData } from "./quat";
@@ -531,28 +532,53 @@ export class Matrix4 implements Disposable {
   /**
    * Creates a new Matrix4 which is the inverse of the given matrix.
    *
-   * @param m The matrix to invert.
+   * @param mat The matrix to invert.
    * @param result (Optional) The matrix to store the result in.
    */
-  static createInverse(_m: Matrix4, _result = new Matrix4()): Matrix4 {
-    throw new Error("Not implemented: createInverse (wasm Version)");
+  static createInverse(mat: Matrix4, result?: Matrix4): Matrix4;
+  /**
+   * Creates a new Matrix4 which is the inverse of the given matrix data.
+   *
+   * @param mat The matrix data to invert.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createInverse(mat: Matrix4Data, result?: Matrix4): Matrix4;
+  static createInverse(mat: Matrix4 | Matrix4Data, result = new Matrix4()): Matrix4 {
+    if (mat instanceof Matrix4) {
+      mCreateInverse(mat.#offset, result.#offset);
+      return result;
+    }
+    using ma = new Matrix4(mat, true);
+    mCreateInverse(ma.#offset, result.#offset);
+    return result;
   }
 
   /**
    * Creates a new Matrix4 which is the inverse of the given matrix.
    * (Typescript version)
    *
-   * @param m The matrix to invert.
+   * @param mat The matrix to invert.
    * @param result (Optional) The matrix to store the result in.
    */
-  static createInverse_ts(mat: Matrix4, result = new Matrix4()): Matrix4 {
+  static createInverse_ts(mat: Matrix4, result?: Matrix4): Matrix4;
+  /**
+   * Creates a new Matrix4 which is the inverse of the given matrix data.
+   * (Typescript version)
+   *
+   * @param mat The matrix data to invert.
+   * @param result (Optional) The matrix to store the result in.
+   */
+  static createInverse_ts(mat: Matrix4Data, result?: Matrix4): Matrix4;
+  static createInverse_ts(mat: Matrix4 | Matrix4Data, result = new Matrix4()): Matrix4 {
     // cglm implementation: cglm/mat4.h around line 659
     const [
       a, b, c, d,
       e, f, g, h,
       i, j, k, l,
       m, n, o, p,
-    ] = mat.get();
+    ] = mat instanceof Matrix4
+      ? mat.get()
+      : mat;
 
     const c1 = k * p - l * o;
     const c2 = c * h - d * g;
