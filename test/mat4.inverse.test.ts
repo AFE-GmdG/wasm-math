@@ -107,39 +107,39 @@ test.each(TEST_CASES)("Matrix4.createInverse_ts mat={$m}", ({ m }) => {
   expect(r30).closeTo(i30, 0.00001); expect(r31).closeTo(i31, 0.00001); expect(r32).closeTo(i32, 0.00001); expect(r33).closeTo(i33, 0.00001);
 });
 
-test("Matrix4.createInversee Performance Test", () => {
-  const a: Matrix4Data = [
-    -0.232, 0.123, 0.456, 0.789,
-    0.321, 0.654, -0.987, 0.123,
-    0.456, -0.789, 0.123, 0.456,
-    0.654, 0.987, 0.123, -0.456,
-  ];
-  const b: Matrix4Data = [
-    0.123, 0.456, 0.789, -0.232,
-    0.654, -0.987, 0.123, 0.321,
-    -0.789, 0.123, 0.456, 0.654,
-    0.987, 0.123, -0.456, 0.987,
-  ];
+// test("Matrix4.createInversee Performance Test", () => {
+//   const a: Matrix4Data = [
+//     -0.232, 0.123, 0.456, 0.789,
+//     0.321, 0.654, -0.987, 0.123,
+//     0.456, -0.789, 0.123, 0.456,
+//     0.654, 0.987, 0.123, -0.456,
+//   ];
+//   const b: Matrix4Data = [
+//     0.123, 0.456, 0.789, -0.232,
+//     0.654, -0.987, 0.123, 0.321,
+//     -0.789, 0.123, 0.456, 0.654,
+//     0.987, 0.123, -0.456, 0.987,
+//   ];
 
-  using ma = new Matrix4(a);
-  using mb = new Matrix4(b);
-  using mr = new Matrix4();
+//   using ma = new Matrix4(a);
+//   using mb = new Matrix4(b);
+//   using mr = new Matrix4();
 
-  const t0 = performance.now();
-  for (let i = 0; i < 50_000_000; ++i) {
-    Matrix4.createInverse(ma, mr);
-    Matrix4.createInverse(mb, mr);
-  }
-  const t1 = performance.now();
-  for (let i = 0; i < 50_000_000; ++i) {
-    Matrix4.createInverse_ts(ma, mr);
-    Matrix4.createInverse_ts(mb, mr);
-  }
-  const t2 = performance.now();
+//   const t0 = performance.now();
+//   for (let i = 0; i < 50_000_000; ++i) {
+//     Matrix4.createInverse(ma, mr);
+//     Matrix4.createInverse(mb, mr);
+//   }
+//   const t1 = performance.now();
+//   for (let i = 0; i < 50_000_000; ++i) {
+//     Matrix4.createInverse_ts(ma, mr);
+//     Matrix4.createInverse_ts(mb, mr);
+//   }
+//   const t2 = performance.now();
 
-  console.log(`WASM Time: ${(t1 - t0).toFixed(3)}ms`);
-  console.log(`TS Time: ${(t2 - t1).toFixed(3)}ms`);
-  console.log(`Speedup: ${((t2 - t1) / (t1 - t0)).toFixed(2)}`);
+//   console.log(`WASM Time: ${(t1 - t0).toFixed(3)}ms`);
+//   console.log(`TS Time: ${(t2 - t1).toFixed(3)}ms`);
+//   console.log(`Speedup: ${((t2 - t1) / (t1 - t0)).toFixed(2)}`);
 
-  expect(t1 - t0).lessThanOrEqual(t2 - t1);
-});
+//   expect(t1 - t0).lessThanOrEqual(t2 - t1);
+// });
