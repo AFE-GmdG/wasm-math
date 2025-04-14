@@ -1,6 +1,6 @@
 import { test, expect } from "vitest";
 
-import type { Matrix4Data } from "./math";
+// import type { Matrix4Data } from "./math";
 import {
   Matrix4,
   MatX1,
