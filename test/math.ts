@@ -54,6 +54,12 @@ export type MatX1 = {
   m: Matrix4Data;
 };
 
+export type MatX1VecX2 = {
+  m: Matrix4Data;
+  v: Vector3Data;
+  result: Vector3Data;
+};
+
 export type MatX3 = {
   a: Matrix4Data;
   b: Matrix4Data;

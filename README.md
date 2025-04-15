@@ -28,7 +28,7 @@
   - *TODO*: createPerspective
   - *TODO*: createLookAt
   - multiply (WASM & TS) (WASM is 4.22 times faster)
-  - *TODO*: multiplyVector
+  - multiplyVector (WASM & TS) (WASM is 2.25 times faster)
   - pretty print
 - **SIMD WebAssembly**: Handwritten SIMD operations ensure maximum performance. The assembly code is kept to an absolute minimum to optimize execution speed. Comparisons with `Emscripten` and `C` code showed significantly longer code, more frequent read and write accesses, and thus lower performance.
 - **TypeScript**: The library is developed with TypeScript, providing a clean and easy-to-use API as well as type safety.

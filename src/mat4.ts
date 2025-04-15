@@ -5,6 +5,7 @@ import {
   mCreateRotQuatData,
   mCreateInverse,
   mMulMat,
+  mMulVec,
 } from "./math";
 import type { QuaternionData } from "./quat";
 import { Quaternion } from "./quat";
@@ -269,6 +270,8 @@ export class Matrix4 implements Disposable {
       this.#view.set(m00OrM);
     }
   }
+
+  get offset(): number { return this.#offset; }
 
   /**
    * Creates a new Matrix4 which is translated by the given vector.
@@ -577,8 +580,8 @@ export class Matrix4 implements Disposable {
       i, j, k, l,
       m, n, o, p,
     ] = mat instanceof Matrix4
-      ? mat.get()
-      : mat;
+        ? mat.get()
+        : mat;
 
     const c1 = k * p - l * o;
     const c2 = c * h - d * g;
@@ -666,8 +669,8 @@ export class Matrix4 implements Disposable {
       a20, a21, a22, a23,
       a30, a31, a32, a33,
     ] = a instanceof Matrix4
-      ? a.get()
-      : a;
+        ? a.get()
+        : a;
 
     const [
       b00, b01, b02, b03,
@@ -675,8 +678,8 @@ export class Matrix4 implements Disposable {
       b20, b21, b22, b23,
       b30, b31, b32, b33,
     ] = b instanceof Matrix4
-      ? b.get()
-      : b;
+        ? b.get()
+        : b;
 
     result.set([
       a00 * b00 + a01 * b10 + a02 * b20 + a03 * b30,
@@ -703,7 +706,70 @@ export class Matrix4 implements Disposable {
     return result;
   }
 
-  // TODO: multiplyVector3
+  /**
+   * Computes the product of a matrix and a vector.
+   *
+   * @param a The Matrix to multiply the vector with.
+   * @param b The Vector to multiply.
+   */
+  static multiplyVector(a: Matrix4, b: Vector3, result?: Vector3): Vector3;
+  /**
+   * Computes the product of a matrix and a vector.
+   *
+   * @param a The Matrix data to multiply the vector with.
+   * @param b The Vector data to multiply.
+   */
+  static multiplyVector(a: Matrix4Data, b: Vector3Data, result?: Vector3): Vector3;
+  static multiplyVector(a: Matrix4 | Matrix4Data, b: Vector3 | Vector3Data, result = new Vector3()): Vector3 {
+    if (a instanceof Matrix4) {
+      // Matrix4 * Vector3
+      mMulVec(a.#offset, (b as Vector3).offset, result.offset);
+      return result;
+    }
+    // Matrix4Data * Vector3Data
+    using ma = new Matrix4(a, true);
+    using vb = new Vector3(b as Vector3Data, true);
+    mMulVec(ma.#offset, vb.offset, result.offset);
+    return result;
+  }
+
+  /**
+   * Computes the product of a matrix and a vector.
+   * (TypeScript version)
+   *
+   * @param a The Matrix to multiply the vector with.
+   * @param b The Vector to multiply.
+   */
+  static multiplyVector_ts(a: Matrix4, b: Vector3, result?: Vector3): Vector3;
+  /**
+   * Computes the product of a matrix and a vector.
+   * (TypeScript version)
+   *
+   * @param a The Matrix data to multiply the vector with.
+   * @param b The Vector data to multiply.
+   */
+  static multiplyVector_ts(a: Matrix4Data, b: Vector3Data, result?: Vector3): Vector3;
+  static multiplyVector_ts(a: Matrix4 | Matrix4Data, b: Vector3 | Vector3Data, result = new Vector3()): Vector3 {
+    const [
+      a00, a01, a02, a03,
+      a10, a11, a12, a13,
+      a20, a21, a22, a23,
+    ] = a instanceof Matrix4
+      ? a.get()
+      : a;
+
+    const [bx, by, bz] = b instanceof Vector3
+      ? b.get()
+      : b;
+
+    const x = a00 * bx + a01 * by + a02 * bz + a03;
+    const y = a10 * bx + a11 * by + a12 * bz + a13;
+    const z = a20 * bx + a21 * by + a22 * bz + a23;
+
+    result.set([x, y, z]);
+    return result;
+  }
+
   // TODO: instance methods to translate, rotate, scale and invert the matrix in place
 
   /**
