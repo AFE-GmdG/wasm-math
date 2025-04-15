@@ -200,6 +200,8 @@ export class Vector3 implements Disposable {
     }
   }
 
+  get offset(): number { return this.#offset; }
+
   /**
    * Adds two vectors.
    * @param a The first vector.

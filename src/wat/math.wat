@@ -1559,4 +1559,103 @@
     ;; Store the fourth column of the result matrix
     v128.store                        ;; S -
   )
+
+  (func $mMulVec (export "mMulVec") (type $offsetX3) (param $offsetA i32) (param $offsetB i32) (param $offsetResult i32)
+    (local $vecB v128)
+    (local $tmp v128)
+
+    ;; Load the result offset
+    local.get $offsetResult            ;; S oR
+
+    ;; load the first column of the vector
+    local.get $offsetA                 ;; S oR, offsetA
+    v128.load                          ;; S oR, matA[0]
+
+    ;; load the B vector
+    local.get $offsetB                 ;; S oR, matA[0], offsetB
+    v128.load                          ;; S oR, matA[0], vecB
+
+    ;; Set the w-component of the vector to 1
+    f32.const 1.0                      ;; S oR, matA[0], vecB, 1.0
+    f32x4.replace_lane 3               ;; S oR, matA[0], vecB
+    local.tee $vecB                    ;; S oR, matA[0], vecB
+
+    ;; Multiply matA[0] with vecB
+    f32x4.mul                          ;; S oR, (tmp[0], tmp[1], tmp[2], tmp[3])
+    local.tee $tmp                     ;; S oR, tmp
+
+    ;; Extract the first lane
+    f32x4.extract_lane 0               ;; S oR, tmp[0]
+    local.get $tmp                     ;; S oR, tmp[0], tmp
+    f32x4.extract_lane 1               ;; S oR, tmp[0], tmp[1]
+    f32.add                            ;; S oR, tmp[0] + tmp[1]
+    local.get $tmp                     ;; S oR, tmp[0] + tmp[1], tmp
+    f32x4.extract_lane 2               ;; S oR, tmp[0] + tmp[1], tmp[2]
+    f32.add                            ;; S oR, tmp[0] + tmp[1] + tmp[2]
+    local.get $tmp                     ;; S oR, tmp[0] + tmp[1] + tmp[2], tmp
+    f32x4.extract_lane 3               ;; S oR, tmp[0] + tmp[1] + tmp[2], tmp[3]
+    f32.add                            ;; S oR, x
+
+    ;; Store x
+    f32x4.splat                        ;; S oR, (x, x, x, x)
+
+    ;; load the second column of the vector
+    local.get $offsetA                 ;; S oR, (x, x, x, x), offsetA
+    i32.const 16                       ;; S oR, (x, x, x, x), offsetA, 16
+    i32.add                            ;; S oR, (x, x, x, x), offsetA + 16
+    v128.load                          ;; S oR, (x, x, x, x), matA[1]
+
+    ;; load the B vector
+    local.get $vecB                    ;; S oR, (x, x, x, x), matA[1], vecB
+    f32x4.mul                          ;; S oR, (x, x, x, x), matA[1] * vecB
+    local.tee $tmp                     ;; S oR, (x, x, x, x), tmp
+
+    ;; Extract the first lane
+    f32x4.extract_lane 0               ;; S oR, (x, x, x, x), tmp[0]
+    local.get $tmp                     ;; S oR, (x, x, x, x), tmp[0], tmp
+    f32x4.extract_lane 1               ;; S oR, (x, x, x, x), tmp[0], tmp[1]
+    f32.add                            ;; S oR, (x, x, x, x), tmp[0] + tmp[1]
+    local.get $tmp                     ;; S oR, (x, x, x, x), tmp[0] + tmp[1], tmp
+    f32x4.extract_lane 2               ;; S oR, (x, x, x, x), tmp[0] + tmp[1], tmp[2]
+    f32.add                            ;; S oR, (x, x, x, x), tmp[0] + tmp[1] + tmp[2]
+    local.get $tmp                     ;; S oR, (x, x, x, x), tmp[0] + tmp[1] + tmp[2], tmp
+    f32x4.extract_lane 3               ;; S oR, (x, x, x, x), tmp[0] + tmp[1] + tmp[2], tmp[3]
+    f32.add                            ;; S oR, (x, x, x, x), y
+
+    ;; Store y
+    f32x4.replace_lane 1               ;; S oR, (x, y, x, x)
+
+    ;; load the third column of the vector
+    local.get $offsetA                 ;; S oR, (x, y, x, x), offsetA
+    i32.const 32                       ;; S oR, (x, y, x, x), offsetA, 32
+    i32.add                            ;; S oR, (x, y, x, x), offsetA + 32
+    v128.load                          ;; S oR, (x, y, x, x), matA[2]
+
+    ;; load the B vector
+    local.get $vecB                    ;; S oR, (x, y, x, x), matA[2], vecB
+    f32x4.mul                          ;; S oR, (x, y, x, x), matA[2] * vecB
+    local.tee $tmp                     ;; S oR, (x, y, x, x), tmp
+
+    ;; Extract the first lane
+    f32x4.extract_lane 0               ;; S oR, (x, y, x, x), tmp[0]
+    local.get $tmp                     ;; S oR, (x, y, x, x), tmp[0], tmp
+    f32x4.extract_lane 1               ;; S oR, (x, y, x, x), tmp[0], tmp[1]
+    f32.add                            ;; S oR, (x, y, x, x), tmp[0] + tmp[1]
+    local.get $tmp                     ;; S oR, (x, y, x, x), tmp[0] + tmp[1], tmp
+    f32x4.extract_lane 2               ;; S oR, (x, y, x, x), tmp[0] + tmp[1], tmp[2]
+    f32.add                            ;; S oR, (x, y, x, x), tmp[0] + tmp[1] + tmp[2]
+    local.get $tmp                     ;; S oR, (x, y, x, x), tmp[0] + tmp[1] + tmp[2], tmp
+    f32x4.extract_lane 3               ;; S oR, (x, y, x, x), tmp[0] + tmp[1] + tmp[2], tmp[3]
+    f32.add                            ;; S oR, (x, y, x, x), z
+
+    ;; Store z
+    f32x4.replace_lane 2               ;; S oR, (x, y, z, x)
+
+    ;; set the w-component of the vector to 0
+    f32.const 0.0                      ;; S oR, (x, y, z, x), 0.0
+    f32x4.replace_lane 3               ;; S oR, (x, y, z, 0.0)
+
+    ;; store the result
+    v128.store                          ;; S -
+  )
 )

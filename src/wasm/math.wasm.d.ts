@@ -148,6 +148,15 @@ interface MathWasm {
    * @param offsetResult MemoryOffset of the result matrix.
    */
   mMulMat(offsetA: number, offsetB: number, offsetResult: number): void;
+
+  /**
+   * Multiplies a matrix with a vector.
+   *
+   * @param offsetA MemoryOffset of the matrix.
+   * @param offsetB MemoryOffset of the vector.
+   * @param offsetResult MemoryOffset of the result vector.
+   */
+  mMulVec(offsetA: number, offsetB: number, offsetResult: number): void;
 }
 
 export interface MathInstance {
